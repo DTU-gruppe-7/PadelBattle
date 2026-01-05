@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.ui.navigation
+package dk.dtu.padelbattle.view.navigation
 
 import kotlinx.serialization.Serializable
 

@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.ui
+package dk.dtu.padelbattle.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

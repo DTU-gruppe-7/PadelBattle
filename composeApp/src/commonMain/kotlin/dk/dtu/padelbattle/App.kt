@@ -16,16 +16,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import dk.dtu.padelbattle.ui.ChoosePlayerScreen
-import dk.dtu.padelbattle.ui.ChooseTournamentScreen
-import dk.dtu.padelbattle.ui.GamePlayScreen
-import dk.dtu.padelbattle.ui.HomeScreen
-import dk.dtu.padelbattle.ui.navigation.ChoosePlayer
-import dk.dtu.padelbattle.ui.navigation.ChooseTournament
-import dk.dtu.padelbattle.ui.navigation.Gameplay
-import dk.dtu.padelbattle.ui.navigation.Home
-import dk.dtu.padelbattle.ui.navigation.Screen
-import dk.dtu.padelbattle.ui.navigation.TopBar
+import dk.dtu.padelbattle.view.ChoosePlayerScreen
+import dk.dtu.padelbattle.view.ChooseTournamentScreen
+import dk.dtu.padelbattle.view.GamePlayScreen
+import dk.dtu.padelbattle.view.HomeScreen
+import dk.dtu.padelbattle.view.navigation.ChoosePlayer
+import dk.dtu.padelbattle.view.navigation.ChooseTournament
+import dk.dtu.padelbattle.view.navigation.Gameplay
+import dk.dtu.padelbattle.view.navigation.Home
+import dk.dtu.padelbattle.view.navigation.Screen
+import dk.dtu.padelbattle.view.navigation.TopBar
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable

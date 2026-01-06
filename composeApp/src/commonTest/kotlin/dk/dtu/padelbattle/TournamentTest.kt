@@ -6,6 +6,7 @@ import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -177,9 +178,9 @@ class TournamentTest {
             players = createPlayers(3)
         )
 
-        val result = tournament.startTournament()
-
-        assertFalse(result)
+        assertFailsWith<IllegalStateException> {
+            tournament.startTournament()
+        }
         assertTrue(tournament.matches.isEmpty())
     }
 
@@ -192,9 +193,9 @@ class TournamentTest {
             players = createPlayers(17)
         )
 
-        val result = tournament.startTournament()
-
-        assertFalse(result)
+        assertFailsWith<IllegalStateException> {
+            tournament.startTournament()
+        }
         assertTrue(tournament.matches.isEmpty())
     }
 
@@ -207,9 +208,9 @@ class TournamentTest {
             players = mutableListOf()
         )
 
-        val result = tournament.startTournament()
-
-        assertFalse(result)
+        assertFailsWith<IllegalStateException> {
+            tournament.startTournament()
+        }
         assertTrue(tournament.matches.isEmpty())
     }
 
@@ -449,9 +450,9 @@ class TournamentTest {
             players = createPlayers(3)
         )
 
-        val result = tournament.extendTournament()
-
-        assertFalse(result)
+        assertFailsWith<IllegalStateException> {
+            tournament.extendTournament()
+        }
     }
 
     // =====================================================

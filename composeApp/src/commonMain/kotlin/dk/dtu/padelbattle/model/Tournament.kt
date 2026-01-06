@@ -78,12 +78,10 @@ class Tournament(
 
     private fun validatePlayerCount(): Boolean {
         if (players.size < 4) {
-            println("Fejl: Der skal være mindst 4 spillere.")
-            return false
+            throw IllegalStateException("Fejl: Der skal være mindst 4 spillere.")
         }
         if (players.size > 16) {
-            println("Fejl: Maksimalt 16 spillere understøttes.")
-            return false
+            throw IllegalStateException("Fejl: Maksimalt 16 spillere understøttes.")
         }
         return true
     }

@@ -17,8 +17,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dk.dtu.padelbattle.view.ChoosePlayerScreen
-import dk.dtu.padelbattle.view.ChooseTournamentScreen
 import dk.dtu.padelbattle.view.GamePlayScreen
+import dk.dtu.padelbattle.ui.screens.ChooseTournamentScreen
+import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import dk.dtu.padelbattle.view.HomeScreen
 import dk.dtu.padelbattle.view.navigation.ChoosePlayer
 import dk.dtu.padelbattle.view.navigation.ChooseTournament
@@ -30,7 +31,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 @Preview
-fun App() {
+fun App(tournamentViewModel: TournamentViewModel = TournamentViewModel()) {
     MaterialTheme {
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
@@ -107,14 +108,9 @@ fun App() {
 
                 composable<ChooseTournament> {
                     ChooseTournamentScreen(
-                        onGoToAmericano = {
+                        viewModel = tournamentViewModel,
+                        onNavigateToPlayers = {
                             navController.navigate(ChoosePlayer)
-                        },
-                        onGoToMexicano = {
-                            navController.navigate(ChoosePlayer)
-                        },
-                        onGoBack = {
-                            navController.popBackStack()
                         }
                     )
                 }
@@ -129,6 +125,7 @@ fun App() {
                         }
                     )
                 }
+
                 composable<Gameplay> { backStackEntry ->
                     val gameplay = backStackEntry.toRoute<Gameplay>()
                     GamePlayScreen(

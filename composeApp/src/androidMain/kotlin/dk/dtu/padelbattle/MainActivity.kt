@@ -6,20 +6,23 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import kotlinx.coroutines.launch
+import java.util.UUID // Bruges til at lave unikke String ID'er
+import dk.dtu.padelbattle.data.entity.TournamentEntity
+import dk.dtu.padelbattle.data.entity.PlayerEntity
+import dk.dtu.padelbattle.data.getPadelBattleDatabase
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        // Opret databasen her
+        val database = getPadelBattleDatabase(applicationContext)
+
         setContent {
-            App()
+            App(database = database) // Send den med ind
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    App()
 }

@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
-import dk.dtu.padelbattle.viewModel.TournamentConfigViewModel
+import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 
 @Composable
 fun TournamentConfigScreen(

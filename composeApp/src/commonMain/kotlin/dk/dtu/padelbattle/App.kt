@@ -16,12 +16,12 @@ import dk.dtu.padelbattle.view.navigation.NavigationGraph
 import dk.dtu.padelbattle.view.navigation.TopBar
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
-import dk.dtu.padelbattle.viewModel.ChooseTournamentViewModel
-import dk.dtu.padelbattle.viewModel.MatchEditViewModel
-import dk.dtu.padelbattle.viewModel.MatchListViewModel
-import dk.dtu.padelbattle.viewModel.StandingsViewModel
-import dk.dtu.padelbattle.viewModel.TournamentConfigViewModel
-import dk.dtu.padelbattle.viewModel.TournamentViewModel
+import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
+import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
+import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
+import dk.dtu.padelbattle.viewmodel.StandingsViewModel
+import dk.dtu.padelbattle.viewmodel.MatchListViewModel
+import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable

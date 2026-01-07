@@ -15,10 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import dk.dtu.padelbattle.viewModel.MatchEditViewModel
-import dk.dtu.padelbattle.viewModel.MatchListViewModel
-import dk.dtu.padelbattle.viewModel.StandingsViewModel
-import dk.dtu.padelbattle.viewModel.TournamentViewModel
+import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
+import dk.dtu.padelbattle.viewmodel.MatchListViewModel
+import dk.dtu.padelbattle.viewmodel.StandingsViewModel
+import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 
 @Composable
 fun TournamentViewScreen(
@@ -69,13 +69,14 @@ fun TournamentViewScreen(
                 matchListViewModel = matchListViewModel,
                 onMatchUpdated = {
                     viewModel.notifyTournamentUpdated()
-                    // Opdater standings med de nyeste spillerdata
-                    standingsViewModel.setPlayers(tournament?.players ?: emptyList())
+                    // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
+                    standingsViewModel.setPlayers(tournament?.players?.map { it.copy() } ?: emptyList())
                 }
             )
             1 -> StandingsScreen(
                 players = tournament?.players ?: emptyList(),
-                viewModel = standingsViewModel
+                viewModel = standingsViewModel,
+                revision = revision
             )
         }
     }

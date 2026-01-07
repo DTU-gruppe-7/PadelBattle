@@ -3,7 +3,7 @@ package dk.dtu.padelbattle.viewmodel
 import androidx.lifecycle.ViewModel
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchResult
-import dk.dtu.padelbattle.model.Utils.MatchResultService
+import dk.dtu.padelbattle.model.utils.MatchResultService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

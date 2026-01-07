@@ -31,8 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Match
-import dk.dtu.padelbattle.viewModel.MatchEditViewModel
-import dk.dtu.padelbattle.viewModel.MatchListViewModel
+import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
+import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 
 @Composable
 fun MatchListScreen(

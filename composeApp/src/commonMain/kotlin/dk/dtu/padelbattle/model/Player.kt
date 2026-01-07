@@ -1,6 +1,6 @@
 package dk.dtu.padelbattle.model
 
-import dk.dtu.padelbattle.model.Utils.generateId
+import dk.dtu.padelbattle.model.utils.generateId
 
 data class Player(val id: String = generateId(), // Genererer automatisk unikt ID
                   var name: String,

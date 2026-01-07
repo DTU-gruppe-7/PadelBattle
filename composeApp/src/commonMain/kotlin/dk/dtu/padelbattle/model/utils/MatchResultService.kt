@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.model.Utils
+package dk.dtu.padelbattle.model.utils
 
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchOutcome

@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.model.Utils
+package dk.dtu.padelbattle.model.utils
 
 fun generateId(): String {
     val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"

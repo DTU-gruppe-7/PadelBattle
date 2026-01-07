@@ -19,10 +19,16 @@ class StandingsViewModel : ViewModel() {
 
     /**
      * Sorterede spillere - beregnes automatisk når _players ændres.
+     * Sorteres først efter totalPoints (højest først), derefter efter wins (højest først).
      * Bruger stateIn for at lave en derived state flow.
      */
     val sortedPlayers: StateFlow<List<Player>> = _players
-        .map { players -> players.sortedByDescending { it.totalPoints } }
+        .map { players ->
+            players.sortedWith(
+                compareByDescending<Player> { it.totalPoints }
+                    .thenByDescending { it.wins }
+            )
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import dk.dtu.padelbattle.model.Match
-import dk.dtu.padelbattle.viewModel.MatchEditViewModel
+import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 
 @Composable
 fun MatchEditDialog(

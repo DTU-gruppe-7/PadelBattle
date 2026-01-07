@@ -11,12 +11,12 @@ import dk.dtu.padelbattle.view.ChooseTournamentScreen
 import dk.dtu.padelbattle.view.HomeScreen
 import dk.dtu.padelbattle.view.TournamentConfigScreen
 import dk.dtu.padelbattle.view.TournamentViewScreen
-import dk.dtu.padelbattle.viewModel.ChooseTournamentViewModel
-import dk.dtu.padelbattle.viewModel.MatchEditViewModel
-import dk.dtu.padelbattle.viewModel.MatchListViewModel
-import dk.dtu.padelbattle.viewModel.StandingsViewModel
-import dk.dtu.padelbattle.viewModel.TournamentConfigViewModel
-import dk.dtu.padelbattle.viewModel.TournamentViewModel
+import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
+import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
+import dk.dtu.padelbattle.viewmodel.MatchListViewModel
+import dk.dtu.padelbattle.viewmodel.StandingsViewModel
+import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
+import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 
 @Composable
 fun NavigationGraph(

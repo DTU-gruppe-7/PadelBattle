@@ -1,5 +1,5 @@
 package dk.dtu.padelbattle.model
-import dk.dtu.padelbattle.model.Utils.generateId
+import dk.dtu.padelbattle.model.utils.generateId
 
 data class Match(val id: String = generateId(),
                  val matchNumber: Int,

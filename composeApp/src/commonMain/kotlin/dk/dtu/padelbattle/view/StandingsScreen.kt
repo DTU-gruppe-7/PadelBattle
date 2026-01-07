@@ -22,16 +22,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Player
-import dk.dtu.padelbattle.viewModel.StandingsViewModel
+import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 
 @Composable
 fun StandingsScreen(
     players: List<Player>,
-    viewModel: StandingsViewModel
+    viewModel: StandingsViewModel,
+    revision: Int = 0
 ) {
-    // Opdater viewModel med spillere når de ændres
-    LaunchedEffect(players) {
-        viewModel.setPlayers(players)
+    // Opdater viewModel med spillere når de ændres - lav en ny liste med kopierede objekter for at trigger StateFlow
+    // Brug revision som key for at sikre opdatering når kampe opdateres
+    LaunchedEffect(players, revision) {
+        viewModel.setPlayers(players.map { it.copy() })
     }
 
     // Hent sorterede spillere fra viewModel StateFlow - opdateres automatisk

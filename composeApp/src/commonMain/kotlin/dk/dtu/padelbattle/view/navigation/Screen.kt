@@ -1,11 +1,5 @@
 package dk.dtu.padelbattle.view.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import dk.dtu.padelbattle.view.ChooseTournamentScreen
-import dk.dtu.padelbattle.viewModel.ChooseTournamentViewModel
 import kotlinx.serialization.Serializable
 
 sealed interface Screen {
@@ -33,8 +27,8 @@ data class TournamentConfig(val tournamentType: String): Screen {
 }
 
 @Serializable
-object TournamentView: Screen {
-    override val title = "Turnering"
+data class TournamentView(val tournamentName: String): Screen {
+    override val title: String = tournamentName
 }
 
 @Serializable
@@ -42,21 +36,3 @@ data class Gameplay(val playerNames: String): Screen {
     override val title = "Kamp"
 }
 
-@Composable
-fun AppNavigation(chooseTournamentViewModel: ChooseTournamentViewModel) {
-    val navController = rememberNavController()
-
-    NavHost(navController = navController, startDestination = "chooseTournament") {
-        composable("chooseTournament") {
-            ChooseTournamentScreen(
-                viewModel = chooseTournamentViewModel,
-                onNavigateToPlayers = {
-                    navController.navigate("selectPlayers")
-                }
-            )
-        }
-        composable("selectPlayers") {
-            // SelectPlayersScreen - can access tournamentViewModel.selectedTournamentType
-        }
-    }
-}

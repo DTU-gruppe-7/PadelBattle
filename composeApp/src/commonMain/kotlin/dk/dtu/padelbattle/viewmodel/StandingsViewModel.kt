@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.viewModel
+package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

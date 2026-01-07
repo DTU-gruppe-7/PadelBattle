@@ -16,16 +16,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.view.ChoosePlayerScreen
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
 import dk.dtu.padelbattle.view.GamePlayScreen
 import dk.dtu.padelbattle.view.HomeScreen
+import dk.dtu.padelbattle.view.TournamentConfigScreen
+import dk.dtu.padelbattle.view.TournamentViewScreen
 import dk.dtu.padelbattle.view.navigation.ChoosePlayer
 import dk.dtu.padelbattle.view.navigation.ChooseTournament
 import dk.dtu.padelbattle.view.navigation.Gameplay
 import dk.dtu.padelbattle.view.navigation.Home
 import dk.dtu.padelbattle.view.navigation.Screen
 import dk.dtu.padelbattle.view.navigation.TopBar
+import dk.dtu.padelbattle.view.navigation.TournamentConfig
+import dk.dtu.padelbattle.view.navigation.TournamentView
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -40,11 +45,14 @@ fun App() {
             Home::class.qualifiedName -> Home
             ChoosePlayer::class.qualifiedName -> ChoosePlayer
             ChooseTournament::class.qualifiedName -> ChooseTournament
+            TournamentView::class.qualifiedName -> TournamentView
             else -> {
-                if (route?.startsWith(Gameplay::class.qualifiedName!!) == true) {
-                    backStackEntry?.toRoute<Gameplay>() ?: Home
-                } else {
-                    Home
+                when {
+                    route?.startsWith(Gameplay::class.qualifiedName!!) == true ->
+                        backStackEntry?.toRoute<Gameplay>() ?: Home
+                    route?.startsWith(TournamentConfig::class.qualifiedName!!) == true ->
+                        backStackEntry?.toRoute<TournamentConfig>() ?: Home
+                    else -> Home
                 }
             }
         }
@@ -108,10 +116,10 @@ fun App() {
                 composable<ChooseTournament> {
                     ChooseTournamentScreen(
                         onGoToAmericano = {
-                            navController.navigate(ChoosePlayer)
+                            navController.navigate(TournamentConfig(tournamentType = "AMERICANO"))
                         },
                         onGoToMexicano = {
-                            navController.navigate(ChoosePlayer)
+                            navController.navigate(TournamentConfig(tournamentType = "MEXICANO"))
                         },
                         onGoBack = {
                             navController.popBackStack()
@@ -119,6 +127,36 @@ fun App() {
                     )
                 }
 
+                composable<TournamentConfig> { backStackEntry ->
+                    val config = backStackEntry.toRoute<TournamentConfig>()
+                    val tournamentType = when (config.tournamentType) {
+                        "MEXICANO" -> TournamentType.MEXICANO
+                        else -> TournamentType.AMERICANO
+                    }
+
+                    TournamentConfigScreen(
+                        tournamentType = tournamentType,
+                        onStartTournament = { name, players ->
+                            // Just navigate to tournament view (visual only)
+                            navController.navigate(TournamentView) {
+                                popUpTo(Home) { inclusive = false }
+                            }
+                        },
+                        onGoBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable<TournamentView> {
+                    TournamentViewScreen(
+                        onGoBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                // Legacy screens - kept for backward compatibility
                 composable<ChoosePlayer> {
                     ChoosePlayerScreen(
                         onGoToStart = { playerNames ->

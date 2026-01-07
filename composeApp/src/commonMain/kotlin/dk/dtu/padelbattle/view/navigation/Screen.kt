@@ -22,6 +22,16 @@ object ChooseTournament: Screen {
 }
 
 @Serializable
+data class TournamentConfig(val tournamentType: String): Screen {
+    override val title = "Opsæt Turnering"
+}
+
+@Serializable
+object TournamentView: Screen {
+    override val title = "Turnering"
+}
+
+@Serializable
 data class Gameplay(val playerNames: String): Screen {
     override val title = "Kamp"
 }

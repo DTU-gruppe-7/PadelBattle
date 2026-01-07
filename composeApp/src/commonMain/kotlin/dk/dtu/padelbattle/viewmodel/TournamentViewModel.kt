@@ -13,6 +13,9 @@ class TournamentViewModel : ViewModel() {
     private val _tournament = MutableStateFlow<Tournament?>(null)
     val tournament: StateFlow<Tournament?> = _tournament.asStateFlow()
 
+    private val _revision = MutableStateFlow(0)
+    val revision: StateFlow<Int> = _revision.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -38,10 +41,10 @@ class TournamentViewModel : ViewModel() {
 
     /**
      * Notificerer at turneringens data er blevet opdateret (f.eks. kampresultater).
-     * Dette trigger en recomposition af UI'et ved at reassigne tournament state.
+     * Dette trigger en recomposition af UI'et ved at inkrementere revision counter.
      */
     fun notifyTournamentUpdated() {
-        _tournament.value = _tournament.value
+        _revision.value++
     }
 
     fun clearError() {

@@ -2,15 +2,19 @@ package dk.dtu.padelbattle.viewModel
 
 import androidx.lifecycle.ViewModel
 import dk.dtu.padelbattle.model.Match
+import dk.dtu.padelbattle.model.MatchResult
+import dk.dtu.padelbattle.model.Utils.MatchResultService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * ViewModel til at håndtere redigering af kampresultater.
- * Opdaterer kampens score og spillernes statistikker (points, wins, losses, draws).
+ * Koordinerer UI-tilstand og delegerer forretningslogik til MatchResultService.
  */
 class MatchEditViewModel : ViewModel() {
+
+    private val matchResultService = MatchResultService()
 
     private val _scoreTeam1 = MutableStateFlow(0)
     val scoreTeam1: StateFlow<Int> = _scoreTeam1.asStateFlow()
@@ -63,123 +67,20 @@ class MatchEditViewModel : ViewModel() {
     }
 
     /**
-     * Gemmer kampresultatet og opdaterer spillernes statistikker.
+     * Gemmer kampresultatet via MatchResultService.
      * Returnerer den opdaterede kamp.
      */
     fun saveMatch(): Match? {
         val match = _currentMatch.value ?: return null
-        val newScoreTeam1 = _scoreTeam1.value
-        val newScoreTeam2 = _scoreTeam2.value
+        val newResult = MatchResult(
+            scoreTeam1 = _scoreTeam1.value,
+            scoreTeam2 = _scoreTeam2.value
+        )
 
-        // Hvis kampen allerede er spillet, fjern de gamle statistikker først
-        if (match.isPlayed) {
-            revertPlayerStats(match)
-        }
-
-        // Opdater kampens score
-        match.scoreTeam1 = newScoreTeam1
-        match.scoreTeam2 = newScoreTeam2
-        match.isPlayed = true
-
-        // Opdater spillernes statistikker baseret på resultatet
-        updatePlayerStats(match)
+        // Delegér forretningslogik til service
+        matchResultService.recordMatchResult(match, newResult)
 
         return match
-    }
-
-    /**
-     * Opdaterer spillernes statistikker baseret på kampresultatet.
-     */
-    private fun updatePlayerStats(match: Match) {
-        val team1Players = listOf(match.team1Player1, match.team1Player2)
-        val team2Players = listOf(match.team2Player1, match.team2Player2)
-
-        team1Players.forEach { player ->
-            player.totalPoints += match.scoreTeam1
-        }
-        team2Players.forEach { player ->
-            player.totalPoints += match.scoreTeam2
-        }
-
-        when {
-            match.scoreTeam1 > match.scoreTeam2 -> {
-                // Team 1 vinder
-                team1Players.forEach { player ->
-                    player.wins++
-                    player.gamesPlayed++
-                }
-                team2Players.forEach { player ->
-                    player.losses++
-                    player.gamesPlayed++
-                }
-            }
-            match.scoreTeam2 > match.scoreTeam1 -> {
-                // Team 2 vinder
-                team2Players.forEach { player ->
-                    player.wins++
-                    player.gamesPlayed++
-                }
-                team1Players.forEach { player ->
-                    player.losses++
-                    player.gamesPlayed++
-                }
-            }
-            else -> {
-                // Uafgjort
-                (team1Players + team2Players).forEach { player ->
-                    player.draws++
-                    player.gamesPlayed++
-                }
-            }
-        }
-    }
-
-    /**
-     * Fjerner de gamle statistikker fra spillerne (bruges når en kamp redigeres).
-     */
-    private fun revertPlayerStats(match: Match) {
-        val team1Players = listOf(match.team1Player1, match.team1Player2)
-        val team2Players = listOf(match.team2Player1, match.team2Player2)
-
-        // Træk point tilbage
-        team1Players.forEach { player ->
-            player.totalPoints -= match.scoreTeam1
-        }
-        team2Players.forEach { player ->
-            player.totalPoints -= match.scoreTeam2
-        }
-
-        when {
-            match.scoreTeam1 > match.scoreTeam2 -> {
-                // Team 1 havde vundet
-                team1Players.forEach { player ->
-                    player.wins--
-                    player.gamesPlayed--
-                }
-                team2Players.forEach { player ->
-                    player.losses--
-                    player.gamesPlayed--
-                }
-            }
-            match.scoreTeam2 > match.scoreTeam1 -> {
-                // Team 2 havde vundet
-                team2Players.forEach { player ->
-                    player.wins--
-                    player.gamesPlayed--
-                }
-                team1Players.forEach { player ->
-                    player.losses--
-                    player.gamesPlayed--
-                }
-            }
-            else -> {
-                // Var uafgjort
-                (team1Players + team2Players).forEach { player ->
-                    player.draws--
-                    player.gamesPlayed--
-                }
-            }
-        }
     }
 
     fun reset() {
@@ -188,3 +89,4 @@ class MatchEditViewModel : ViewModel() {
         _currentMatch.value = null
     }
 }
+

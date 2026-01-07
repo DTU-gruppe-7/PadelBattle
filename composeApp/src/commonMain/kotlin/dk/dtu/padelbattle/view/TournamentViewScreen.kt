@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,11 +29,13 @@ fun TournamentViewScreen(
     onGoBack: () -> Unit
 ) {
     val tournament by viewModel.tournament.collectAsState()
+    val revision by viewModel.revision.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    key(revision) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -75,5 +78,6 @@ fun TournamentViewScreen(
                 viewModel = standingsViewModel
             )
         }
+    }
     }
 }

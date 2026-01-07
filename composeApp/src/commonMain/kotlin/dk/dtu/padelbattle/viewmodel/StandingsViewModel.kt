@@ -37,19 +37,5 @@ class StandingsViewModel : ViewModel() {
         _players.value = players
     }
 
-    /**
-     * Notificerer at data er opdateret og genberegner sortering
-     */
-    fun refresh(players: List<Player>) {
-        setPlayers(players)
-    }
-
-    /**
-     * Finder spillerens placering (1-indexed)
-     */
-    fun getPlayerPosition(playerId: String): Int {
-        val sorted = sortedPlayers.value
-        return sorted.indexOfFirst { it.id == playerId } + 1
-    }
 }
 

@@ -5,9 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dk.dtu.padelbattle.data.PadelBattleDatabase
@@ -29,13 +29,13 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 fun App(
     database: PadelBattleDatabase
 ) {
-    // Brug remember til at bevare ViewModels ved recomposition
-    val chooseTournamentViewModel = remember { ChooseTournamentViewModel() }
-    val tournamentConfigViewModel = remember { TournamentConfigViewModel() }
-    val tournamentViewModel = remember { TournamentViewModel() }
-    val standingsViewModel = remember { StandingsViewModel() }
-    val matchEditViewModel = remember { MatchEditViewModel() }
-    val matchListViewModel = remember { MatchListViewModel() }
+    // Brug viewModel() til at bevare ViewModels ved configuration changes
+    val chooseTournamentViewModel: ChooseTournamentViewModel = viewModel { ChooseTournamentViewModel() }
+    val tournamentConfigViewModel: TournamentConfigViewModel = viewModel { TournamentConfigViewModel() }
+    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel() }
+    val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
+    val matchEditViewModel: MatchEditViewModel = viewModel { MatchEditViewModel() }
+    val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
 
     MaterialTheme {
         val navController = rememberNavController()

@@ -2,7 +2,6 @@
 package dk.dtu.padelbattle.data
 
 import androidx.room.Room
-import androidx.room.RoomDatabaseConstructor
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
@@ -16,8 +15,7 @@ fun getPadelBattleDatabase(): PadelBattleDatabase {
     val dbFilePath = documentDirectory() + "/padelbattle.db"
 
     return Room.databaseBuilder<PadelBattleDatabase>(
-        name = dbFilePath,
-        factory = { PadelBattleDatabase::class.instantiateImpl()}
+        name = dbFilePath
     )
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)

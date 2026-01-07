@@ -118,14 +118,10 @@ fun App(database: PadelBattleDatabase, tournamentViewModel: TournamentViewModel 
 
                 composable<ChooseTournament> {
                     ChooseTournamentScreen(
-                        onGoToAmericano = {
-                            navController.navigate(TournamentConfig(tournamentType = "AMERICANO"))
-                        },
-                        onGoToMexicano = {
-                            navController.navigate(TournamentConfig(tournamentType = "MEXICANO"))
-                        },
-                        onGoBack = {
-                            navController.popBackStack()
+                        viewModel = tournamentViewModel,
+                        onNavigateToPlayers = {
+                            val typeName = tournamentViewModel.selectedTournamentType.value?.name ?: "AMERICANO"
+                            navController.navigate(TournamentConfig(tournamentType = typeName))
                         }
                     )
                 }

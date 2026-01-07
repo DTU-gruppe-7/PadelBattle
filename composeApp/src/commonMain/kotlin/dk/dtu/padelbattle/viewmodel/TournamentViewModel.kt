@@ -4,11 +4,7 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-enum class TournamentType {
-    AMERICANO,
-    MEXICANO
-}
+import dk.dtu.padelbattle.model.TournamentType
 
 class TournamentViewModel : ViewModel() {
 

@@ -21,7 +21,7 @@ import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.view.ChoosePlayerScreen
 import dk.dtu.padelbattle.view.GamePlayScreen
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
-import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
+import dk.dtu.padelbattle.viewModel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.view.HomeScreen
 import dk.dtu.padelbattle.view.TournamentConfigScreen
 import dk.dtu.padelbattle.view.TournamentViewScreen

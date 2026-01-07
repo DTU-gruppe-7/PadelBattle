@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.viewmodel
+package dk.dtu.padelbattle.viewModel
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

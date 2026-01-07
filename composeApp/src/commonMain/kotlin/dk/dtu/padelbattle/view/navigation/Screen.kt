@@ -5,7 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
-import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
+import dk.dtu.padelbattle.viewModel.ChooseTournamentViewModel
 import kotlinx.serialization.Serializable
 
 sealed interface Screen {

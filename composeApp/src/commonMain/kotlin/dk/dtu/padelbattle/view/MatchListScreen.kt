@@ -19,7 +19,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,28 +30,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dk.dtu.padelbattle.model.Match
+import dk.dtu.padelbattle.viewModel.MatchEditViewModel
+import dk.dtu.padelbattle.viewModel.MatchListViewModel
 
 @Composable
-fun MatchListScreen() {
+fun MatchListScreen(
+    matches: List<Match>,
+    matchEditViewModel: MatchEditViewModel,
+    matchListViewModel: MatchListViewModel,
+    onMatchUpdated: () -> Unit
+) {
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedMatchIndex by remember { mutableStateOf(0) }
 
-    // Mock data for visual prototype
-    val mockMatches = listOf(
-        MockMatch(1, 1, "Alice", "Bob", "Charlie", "David", 6, 4, true),
-        MockMatch(1, 2, "Emma", "Frank", "Grace", "Henry", 0, 0, false),
-        MockMatch(2, 1, "Alice", "Charlie", "Bob", "David", 0, 0, false)
-    )
+    // Track revision for recomposition when matches are updated in-place
+    val revision by matchListViewModel.revision.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+    // Opdater viewModel når matches ændres
+    LaunchedEffect(matches) {
+        matchListViewModel.setMatches(matches)
+    }
+
+    // Brug key() til at tvinge recomposition ved revision changes
+    key(revision) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            val matchesByRound = mockMatches.groupBy { it.roundNumber }
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val matchesByRound = matches.groupBy { it.roundNumber }
 
             matchesByRound.forEach { (round, roundMatches) ->
                 item {
@@ -66,26 +80,29 @@ fun MatchListScreen() {
                     MatchCard(
                         match = match,
                         onEditClick = {
-                            selectedMatchIndex = index
+                            // Find index i originale matches liste
+                            selectedMatchIndex = matches.indexOfFirst { it.id == match.id }
                             showEditDialog = true
                         }
                     )
                 }
             }
+            }
         }
     }
 
-    if (showEditDialog && mockMatches.isNotEmpty()) {
-        val match = mockMatches[selectedMatchIndex.coerceIn(0, mockMatches.size - 1)]
+    if (showEditDialog && matches.isNotEmpty() && selectedMatchIndex >= 0) {
+        // Brug det originale Match-objekt fra turneringen
+        val originalMatch = matches[selectedMatchIndex.coerceIn(0, matches.size - 1)]
         MatchEditDialog(
-            team1Player1 = match.team1Player1,
-            team1Player2 = match.team1Player2,
-            team2Player1 = match.team2Player1,
-            team2Player2 = match.team2Player2,
-            courtNumber = match.courtNumber,
-            roundNumber = match.roundNumber,
-            initialScoreTeam1 = match.scoreTeam1,
-            initialScoreTeam2 = match.scoreTeam2,
+            match = originalMatch,
+            viewModel = matchEditViewModel,
+            onSave = {
+                showEditDialog = false
+                // Notificer om opdatering for at trigger recomposition
+                matchListViewModel.notifyMatchUpdated()
+                onMatchUpdated()
+            },
             onDismiss = { showEditDialog = false }
         )
     }
@@ -93,7 +110,7 @@ fun MatchListScreen() {
 
 @Composable
 private fun MatchCard(
-    match: MockMatch,
+    match: Match,
     onEditClick: () -> Unit
 ) {
     Card(
@@ -138,7 +155,7 @@ private fun MatchCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${match.team1Player1} & ${match.team1Player2}",
+                        text = "${match.team1Player1.name} & ${match.team1Player2.name}",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
@@ -167,7 +184,7 @@ private fun MatchCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${match.team2Player1} & ${match.team2Player2}",
+                        text = "${match.team2Player1.name} & ${match.team2Player2.name}",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
@@ -199,16 +216,4 @@ private fun MatchCard(
     }
 }
 
-// Mock data class for visual prototype
-private data class MockMatch(
-    val roundNumber: Int,
-    val courtNumber: Int,
-    val team1Player1: String,
-    val team1Player2: String,
-    val team2Player1: String,
-    val team2Player2: String,
-    val scoreTeam1: Int,
-    val scoreTeam2: Int,
-    val isPlayed: Boolean
-)
 

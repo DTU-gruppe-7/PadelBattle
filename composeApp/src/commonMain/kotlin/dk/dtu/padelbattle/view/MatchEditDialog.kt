@@ -15,30 +15,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import dk.dtu.padelbattle.model.Match
+import dk.dtu.padelbattle.viewModel.MatchEditViewModel
 
 @Composable
 fun MatchEditDialog(
-    team1Player1: String,
-    team1Player2: String,
-    team2Player1: String,
-    team2Player2: String,
-    courtNumber: Int,
-    roundNumber: Int,
-    initialScoreTeam1: Int,
-    initialScoreTeam2: Int,
+    match: Match,
+    viewModel: MatchEditViewModel,
+    onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var scoreTeam1 by remember { mutableStateOf(initialScoreTeam1) }
-    var scoreTeam2 by remember { mutableStateOf(initialScoreTeam2) }
+    val scoreTeam1 by viewModel.scoreTeam1.collectAsState()
+    val scoreTeam2 by viewModel.scoreTeam2.collectAsState()
+
+    // Initialiser viewModel med kampen
+    LaunchedEffect(match) {
+        viewModel.setMatch(match)
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -60,7 +61,7 @@ fun MatchEditDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Bane $courtNumber - Runde $roundNumber",
+                    text = "Bane ${match.courtNumber} - Runde ${match.roundNumber}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -72,7 +73,7 @@ fun MatchEditDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "$team1Player1 & $team1Player2",
+                        text = "${match.team1Player1.name} & ${match.team1Player2.name}",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
@@ -81,7 +82,8 @@ fun MatchEditDialog(
 
                     ScoreInput(
                         score = scoreTeam1,
-                        onScoreChange = { scoreTeam1 = it }
+                        onIncrement = { viewModel.incrementScoreTeam1() },
+                        onDecrement = { viewModel.decrementScoreTeam1() }
                     )
                 }
 
@@ -101,7 +103,7 @@ fun MatchEditDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "$team2Player1 & $team2Player2",
+                        text = "${match.team2Player1.name} & ${match.team2Player2.name}",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
@@ -110,7 +112,8 @@ fun MatchEditDialog(
 
                     ScoreInput(
                         score = scoreTeam2,
-                        onScoreChange = { scoreTeam2 = it }
+                        onIncrement = { viewModel.incrementScoreTeam2() },
+                        onDecrement = { viewModel.decrementScoreTeam2() }
                     )
                 }
 
@@ -126,8 +129,8 @@ fun MatchEditDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
                         onClick = {
-                            // Visual prototype - just close dialog without saving
-                            onDismiss()
+                            viewModel.saveMatch()
+                            onSave()
                         }
                     ) {
                         Text("Gem", fontWeight = FontWeight.Bold)
@@ -141,15 +144,14 @@ fun MatchEditDialog(
 @Composable
 private fun ScoreInput(
     score: Int,
-    onScoreChange: (Int) -> Unit
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        IconButton(
-            onClick = { if (score > 0) onScoreChange(score - 1) }
-        ) {
+        IconButton(onClick = onDecrement) {
             Text("-", style = MaterialTheme.typography.headlineMedium)
         }
 
@@ -160,11 +162,8 @@ private fun ScoreInput(
             modifier = Modifier.padding(horizontal = 24.dp)
         )
 
-        IconButton(
-            onClick = { onScoreChange(score + 1) }
-        ) {
+        IconButton(onClick = onIncrement) {
             Text("+", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
-

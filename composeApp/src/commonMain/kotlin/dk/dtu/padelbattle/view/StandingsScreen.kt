@@ -14,22 +14,28 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dk.dtu.padelbattle.model.Player
+import dk.dtu.padelbattle.viewModel.StandingsViewModel
 
 @Composable
-fun StandingsScreen() {
-    // Mock data for visual prototype
-    val mockPlayers = listOf(
-        MockPlayer(1, "Alice", 18, 3),
-        MockPlayer(2, "Bob", 16, 3),
-        MockPlayer(3, "Charlie", 14, 3),
-        MockPlayer(4, "David", 12, 3),
-        MockPlayer(5, "Emma", 10, 2),
-        MockPlayer(6, "Frank", 8, 2)
-    )
+fun StandingsScreen(
+    players: List<Player>,
+    viewModel: StandingsViewModel
+) {
+    // Opdater viewModel med spillere når de ændres
+    LaunchedEffect(players) {
+        viewModel.setPlayers(players)
+    }
+
+    // Hent sorterede spillere fra viewModel StateFlow - opdateres automatisk
+    val sortedPlayers by viewModel.sortedPlayers.collectAsState()
 
     Column(
         modifier = Modifier
@@ -81,9 +87,9 @@ fun StandingsScreen() {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(mockPlayers.size) { index ->
-                val player = mockPlayers[index]
-                StandingRow(player = player)
+            items(sortedPlayers.size) { index ->
+                val player = sortedPlayers[index]
+                StandingRow(player = player, position = index + 1)
             }
         }
     }
@@ -91,13 +97,14 @@ fun StandingsScreen() {
 
 @Composable
 private fun StandingRow(
-    player: MockPlayer
+    player: Player,
+    position: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when (player.position) {
+            containerColor = when (position) {
                 1 -> MaterialTheme.colorScheme.tertiaryContainer
                 2 -> MaterialTheme.colorScheme.surfaceVariant
                 3 -> MaterialTheme.colorScheme.surfaceVariant
@@ -116,8 +123,8 @@ private fun StandingRow(
                 modifier = Modifier.weight(0.8f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (player.position <= 3) {
-                    val emoji = when (player.position) {
+                if (position <= 3) {
+                    val emoji = when (position) {
                         1 -> "🥇"
                         2 -> "🥈"
                         3 -> "🥉"
@@ -129,7 +136,7 @@ private fun StandingRow(
                     )
                 } else {
                     Text(
-                        text = "${player.position}",
+                        text = "$position",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -139,7 +146,7 @@ private fun StandingRow(
             Text(
                 text = player.name,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (player.position <= 3) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (position <= 3) FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.weight(2f)
             )
 
@@ -160,11 +167,4 @@ private fun StandingRow(
     }
 }
 
-// Mock data class for visual prototype
-private data class MockPlayer(
-    val position: Int,
-    val name: String,
-    val totalPoints: Int,
-    val gamesPlayed: Int
-)
 

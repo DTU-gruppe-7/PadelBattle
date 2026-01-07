@@ -18,8 +18,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dk.dtu.padelbattle.data.PadelBattleDatabase
 import dk.dtu.padelbattle.model.TournamentType
-import dk.dtu.padelbattle.view.ChoosePlayerScreen
-import dk.dtu.padelbattle.view.GamePlayScreen
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
 import dk.dtu.padelbattle.viewModel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.view.HomeScreen
@@ -149,28 +147,6 @@ fun App(database: PadelBattleDatabase, chooseTournamentViewModel: ChooseTourname
 
                 composable<TournamentView> {
                     TournamentViewScreen(
-                        onGoBack = {
-                            navController.popBackStack()
-                        }
-                    )
-                }
-
-                // Legacy screens - kept for backward compatibility
-                composable<ChoosePlayer> {
-                    ChoosePlayerScreen(
-                        onGoToStart = { playerNames ->
-                            navController.navigate(Gameplay(playerNames))
-                        },
-                        onGoBack = {
-                            navController.popBackStack()
-                        }
-                    )
-                }
-
-                composable<Gameplay> { backStackEntry ->
-                    val gameplay = backStackEntry.toRoute<Gameplay>()
-                    GamePlayScreen(
-                        playerNames = gameplay.playerNames.split(","),
                         onGoBack = {
                             navController.popBackStack()
                         }

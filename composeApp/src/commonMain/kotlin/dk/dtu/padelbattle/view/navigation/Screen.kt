@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import dk.dtu.padelbattle.ui.screens.ChooseTournamentScreen
-import dk.dtu.padelbattle.viewmodel.TournamentViewModel
+import dk.dtu.padelbattle.view.ChooseTournamentScreen
+import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import kotlinx.serialization.Serializable
 
 sealed interface Screen {
@@ -43,13 +43,13 @@ data class Gameplay(val playerNames: String): Screen {
 }
 
 @Composable
-fun AppNavigation(tournamentViewModel: TournamentViewModel) {
+fun AppNavigation(chooseTournamentViewModel: ChooseTournamentViewModel) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "chooseTournament") {
         composable("chooseTournament") {
             ChooseTournamentScreen(
-                viewModel = tournamentViewModel,
+                viewModel = chooseTournamentViewModel,
                 onNavigateToPlayers = {
                     navController.navigate("selectPlayers")
                 }

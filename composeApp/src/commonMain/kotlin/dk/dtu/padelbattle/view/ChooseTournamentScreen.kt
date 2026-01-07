@@ -1,4 +1,4 @@
-package dk.dtu.padelbattle.ui.screens
+package dk.dtu.padelbattle.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -9,11 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.TournamentType
-import dk.dtu.padelbattle.viewmodel.TournamentViewModel
+import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 
 @Composable
 fun ChooseTournamentScreen(
-    viewModel: TournamentViewModel,
+    viewModel: ChooseTournamentViewModel,
     onNavigateToPlayers: () -> Unit
 ) {
     val selectedType by viewModel.selectedTournamentType.collectAsState()

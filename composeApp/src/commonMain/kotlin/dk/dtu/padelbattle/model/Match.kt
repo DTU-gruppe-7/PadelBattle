@@ -2,6 +2,7 @@ package dk.dtu.padelbattle.model
 import dk.dtu.padelbattle.model.Utils.generateId
 
 data class Match(val id: String = generateId(),
+                 val matchNumber: Int,
                  val roundNumber: Int,
                  val courtNumber: Int,
 

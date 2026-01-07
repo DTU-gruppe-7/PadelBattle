@@ -22,25 +22,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
+import dk.dtu.padelbattle.viewModel.TournamentConfigViewModel
 
 @Composable
 fun TournamentConfigScreen(
     tournamentType: TournamentType,
-    onStartTournament: (name: String, players: List<String>) -> Unit,
+    viewModel: TournamentConfigViewModel,
+    onTournamentCreated: (Tournament) -> Unit,
     onGoBack: () -> Unit
 ) {
-    var tournamentName by remember { mutableStateOf("") }
-    var playerNames by remember { mutableStateOf(listOf<String>()) }
-    var currentPlayerName by remember { mutableStateOf("") }
+    val tournamentName by viewModel.tournamentName.collectAsState()
+    val playerNames by viewModel.playerNames.collectAsState()
+    val currentPlayerName by viewModel.currentPlayerName.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Column(
         modifier = Modifier
@@ -76,7 +78,7 @@ fun TournamentConfigScreen(
 
         OutlinedTextField(
             value = tournamentName,
-            onValueChange = { tournamentName = it },
+            onValueChange = { viewModel.updateTournamentName(it) },
             label = { Text("Turneringsnavn") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -97,18 +99,13 @@ fun TournamentConfigScreen(
         ) {
             OutlinedTextField(
                 value = currentPlayerName,
-                onValueChange = { currentPlayerName = it },
+                onValueChange = { viewModel.updateCurrentPlayerName(it) },
                 label = { Text("Spillernavn") },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
             IconButton(
-                onClick = {
-                    if (currentPlayerName.isNotBlank()) {
-                        playerNames = playerNames + currentPlayerName.trim()
-                        currentPlayerName = ""
-                    }
-                },
+                onClick = { viewModel.addPlayer() },
                 enabled = currentPlayerName.isNotBlank() && playerNames.size < 16
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Tilføj spiller")
@@ -147,9 +144,7 @@ fun TournamentConfigScreen(
                             modifier = Modifier.padding(start = 8.dp),
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        IconButton(onClick = {
-                            playerNames = playerNames.toMutableList().apply { removeAt(index) }
-                        }) {
+                        IconButton(onClick = { viewModel.removePlayer(index) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Fjern spiller")
                         }
                     }
@@ -159,15 +154,15 @@ fun TournamentConfigScreen(
 
         Button(
             onClick = {
-                if (tournamentName.isNotBlank() && playerNames.size >= 4) {
-                    onStartTournament(tournamentName, playerNames)
+                val tournament = viewModel.createTournament(tournamentType)
+                if (tournament != null) {
+                    onTournamentCreated(tournament)
                 }
             },
-            enabled = tournamentName.isNotBlank() && playerNames.size in 4..16,
+            enabled = viewModel.canStartTournament(),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Start Turnering", style = MaterialTheme.typography.titleMedium)
         }
     }
 }
-

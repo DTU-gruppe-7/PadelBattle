@@ -1,5 +1,8 @@
 package dk.dtu.padelbattle.model.utils
 
+import dk.dtu.padelbattle.data.dao.MatchDao
+import dk.dtu.padelbattle.data.dao.PlayerDao
+import dk.dtu.padelbattle.data.mapper.toEntity
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchOutcome
 import dk.dtu.padelbattle.model.MatchResult
@@ -9,7 +12,10 @@ import dk.dtu.padelbattle.model.MatchResult
  * This follows the Single Responsibility Principle by separating the match result logic
  * from the ViewModel and domain models.
  */
-class MatchResultService {
+class MatchResultService(
+    private val matchDao: MatchDao,
+    private val playerDao: PlayerDao
+) {
 
     /**
      * Records a match result, updating the match and player statistics.
@@ -17,21 +23,53 @@ class MatchResultService {
      *
      * @param match The match to update
      * @param newResult The new result to apply
+     * @param tournamentId The tournament ID for database operations
+     * @throws IllegalArgumentException if tournamentId is blank
      */
-    fun recordMatchResult(match: Match, newResult: MatchResult) {
-        // If the match was already played, revert old statistics first
-        if (match.isPlayed) {
-            val oldResult = MatchResult(match.scoreTeam1, match.scoreTeam2)
-            revertPlayerStatistics(match, oldResult)
+    suspend fun recordMatchResult(match: Match, newResult: MatchResult, tournamentId: String) {
+        try {
+            // Valider tournamentId
+            require(tournamentId.isNotBlank()) { "tournamentId cannot be blank" }
+
+            println("MatchResultService: Recording result for match ${match.id} in tournament $tournamentId")
+
+            // If the match was already played, revert old statistics first
+            if (match.isPlayed) {
+                val oldResult = MatchResult(match.scoreTeam1, match.scoreTeam2)
+                revertPlayerStatistics(match, oldResult)
+            }
+
+            // Update match scores
+            match.scoreTeam1 = newResult.scoreTeam1
+            match.scoreTeam2 = newResult.scoreTeam2
+            match.isPlayed = true
+
+            // Apply new statistics
+            applyPlayerStatistics(match, newResult)
+
+            println("MatchResultService: Updating match in database...")
+            // Update match in database
+            matchDao.updateMatch(match.toEntity(tournamentId))
+
+            println("MatchResultService: Updating players in database...")
+            // Update all affected players in database
+            val allPlayers = listOf(
+                match.team1Player1,
+                match.team1Player2,
+                match.team2Player1,
+                match.team2Player2
+            )
+
+            allPlayers.forEach { player ->
+                playerDao.updatePlayer(player.toEntity(tournamentId))
+            }
+
+            println("MatchResultService: Successfully saved match result")
+        } catch (e: Exception) {
+            println("MatchResultService ERROR: ${e.message}")
+            e.printStackTrace()
+            throw e // Re-throw så ViewModel kan håndtere det
         }
-
-        // Update match scores
-        match.scoreTeam1 = newResult.scoreTeam1
-        match.scoreTeam2 = newResult.scoreTeam2
-        match.isPlayed = true
-
-        // Apply new statistics
-        applyPlayerStatistics(match, newResult)
     }
 
     /**

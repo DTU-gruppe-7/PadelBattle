@@ -12,7 +12,7 @@ import dk.dtu.padelbattle.data.entity.MatchEntity
 import dk.dtu.padelbattle.data.entity.PlayerEntity
 import dk.dtu.padelbattle.data.entity.TournamentEntity
 
-@Database(entities = [TournamentEntity::class, PlayerEntity::class, MatchEntity::class], version = 1)
+@Database(entities = [TournamentEntity::class, PlayerEntity::class, MatchEntity::class], version = 2)
 @ConstructedBy(PadelBattleDatabaseConstructor::class)
 abstract class PadelBattleDatabase : RoomDatabase() {
     abstract fun tournamentDao(): TournamentDao

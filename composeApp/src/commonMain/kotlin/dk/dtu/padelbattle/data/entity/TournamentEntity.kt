@@ -10,5 +10,6 @@ data class TournamentEntity(
     val name: String,
     val type: String,  // "AMERICANO" eller "MEXICANO" (fra TournamentType enum)
     val dateCreated: Long,
-    val isCompleted: Boolean = false
+    val numberOfCourts: Int,
+    val isCompleted: Boolean
 )

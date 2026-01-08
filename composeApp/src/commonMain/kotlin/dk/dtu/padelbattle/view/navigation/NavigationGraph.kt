@@ -12,6 +12,7 @@ import dk.dtu.padelbattle.view.HomeScreen
 import dk.dtu.padelbattle.view.TournamentConfigScreen
 import dk.dtu.padelbattle.view.TournamentViewScreen
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
+import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
@@ -21,6 +22,7 @@ import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
+    homeViewModel: HomeViewModel,
     chooseTournamentViewModel: ChooseTournamentViewModel,
     tournamentConfigViewModel: TournamentConfigViewModel,
     tournamentViewModel: TournamentViewModel,
@@ -36,8 +38,17 @@ fun NavigationGraph(
     ) {
         composable<Home> {
             HomeScreen(
+                viewModel = homeViewModel,
                 onGoToTournamentScreen = {
                     navController.navigate(ChooseTournament)
+                },
+                onTournamentClicked = { tournamentId ->
+                    // Find the tournament from the current state
+                    val tournament = homeViewModel.tournaments.value.find { it.id == tournamentId }
+                    if (tournament != null) {
+                        tournamentViewModel.setTournament(tournament)
+                        navController.navigate(TournamentView(tournamentName = tournament.name))
+                    }
                 }
             )
         }

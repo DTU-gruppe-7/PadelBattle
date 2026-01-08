@@ -17,6 +17,7 @@ import dk.dtu.padelbattle.view.navigation.TopBar
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
+import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
@@ -30,11 +31,29 @@ fun App(
     database: PadelBattleDatabase
 ) {
     // Brug viewModel() til at bevare ViewModels ved configuration changes
+    val homeViewModel: HomeViewModel = viewModel {
+        HomeViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
+    }
     val chooseTournamentViewModel: ChooseTournamentViewModel = viewModel { ChooseTournamentViewModel() }
-    val tournamentConfigViewModel: TournamentConfigViewModel = viewModel { TournamentConfigViewModel() }
+    val tournamentConfigViewModel: TournamentConfigViewModel = viewModel {
+        TournamentConfigViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
+    }
     val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel() }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
-    val matchEditViewModel: MatchEditViewModel = viewModel { MatchEditViewModel() }
+    val matchEditViewModel: MatchEditViewModel = viewModel {
+        MatchEditViewModel(
+            database.matchDao(),
+            database.playerDao()
+        )
+    }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
 
     MaterialTheme {
@@ -66,6 +85,7 @@ fun App(
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
+                homeViewModel = homeViewModel,
                 modifier = Modifier.padding(contentPadding)
             )
         }

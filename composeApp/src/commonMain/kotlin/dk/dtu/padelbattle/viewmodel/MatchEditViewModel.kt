@@ -1,20 +1,27 @@
 package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dk.dtu.padelbattle.data.dao.MatchDao
+import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchResult
 import dk.dtu.padelbattle.model.utils.MatchResultService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel til at håndtere redigering af kampresultater.
  * Koordinerer UI-tilstand og delegerer forretningslogik til MatchResultService.
  */
-class MatchEditViewModel : ViewModel() {
+class MatchEditViewModel(
+    private val matchDao: MatchDao,
+    private val playerDao: PlayerDao
+) : ViewModel() {
 
-    private val matchResultService = MatchResultService()
+    private val matchResultService = MatchResultService(matchDao, playerDao)
 
     private val _scoreTeam1 = MutableStateFlow(0)
     val scoreTeam1: StateFlow<Int> = _scoreTeam1.asStateFlow()
@@ -30,57 +37,99 @@ class MatchEditViewModel : ViewModel() {
      */
     fun setMatch(match: Match) {
         _currentMatch.value = match
-        _scoreTeam1.value = match.scoreTeam1
-        _scoreTeam2.value = match.scoreTeam2
+        if (match.isPlayed) {
+            _scoreTeam1.value = match.scoreTeam1
+            _scoreTeam2.value = match.scoreTeam2
+        } else {
+            // Standardværdier for nye kampe
+            _scoreTeam1.value = TOTAL_POINTS / 2
+            _scoreTeam2.value = TOTAL_POINTS / 2
+        }
+    }
+
+    companion object {
+        const val TOTAL_POINTS = 16
     }
 
     fun updateScoreTeam1(score: Int) {
-        if (score >= 0) {
+        if (score >= 0 && score <= TOTAL_POINTS) {
             _scoreTeam1.value = score
+            _scoreTeam2.value = TOTAL_POINTS - score
         }
     }
 
     fun updateScoreTeam2(score: Int) {
-        if (score >= 0) {
+        if (score >= 0 && score <= TOTAL_POINTS) {
             _scoreTeam2.value = score
+            _scoreTeam1.value = TOTAL_POINTS - score
         }
     }
 
     fun incrementScoreTeam1() {
-        _scoreTeam1.value++
+        if (_scoreTeam1.value < TOTAL_POINTS) {
+            _scoreTeam1.value++
+            _scoreTeam2.value = TOTAL_POINTS - _scoreTeam1.value
+        }
     }
 
     fun decrementScoreTeam1() {
         if (_scoreTeam1.value > 0) {
             _scoreTeam1.value--
+            _scoreTeam2.value = TOTAL_POINTS - _scoreTeam1.value
         }
     }
 
     fun incrementScoreTeam2() {
-        _scoreTeam2.value++
+        if (_scoreTeam2.value < TOTAL_POINTS) {
+            _scoreTeam2.value++
+            _scoreTeam1.value = TOTAL_POINTS - _scoreTeam2.value
+        }
     }
 
     fun decrementScoreTeam2() {
         if (_scoreTeam2.value > 0) {
             _scoreTeam2.value--
+            _scoreTeam1.value = TOTAL_POINTS - _scoreTeam2.value
         }
     }
 
     /**
      * Gemmer kampresultatet via MatchResultService.
      * Returnerer den opdaterede kamp.
+     * @param tournamentId ID på turneringen som kampen tilhører
+     * @param onComplete Callback når gemning er færdig
      */
-    fun saveMatch(): Match? {
-        val match = _currentMatch.value ?: return null
+    fun saveMatch(tournamentId: String, onComplete: (Match?) -> Unit) {
+        val match = _currentMatch.value
+        if (match == null) {
+            onComplete(null)
+            return
+        }
+
+        // Valider tournamentId
+        if (tournamentId.isBlank()) {
+            println("ERROR: tournamentId is blank, cannot save match")
+            onComplete(null)
+            return
+        }
+
         val newResult = MatchResult(
             scoreTeam1 = _scoreTeam1.value,
             scoreTeam2 = _scoreTeam2.value
         )
 
-        // Delegér forretningslogik til service
-        matchResultService.recordMatchResult(match, newResult)
+        // Delegér forretningslogik til service med fejlhåndtering
+        viewModelScope.launch {
+            try {
+                matchResultService.recordMatchResult(match, newResult, tournamentId)
+                onComplete(match)
+            } catch (e: Exception) {
+                println("ERROR saving match: ${e.message}")
+                e.printStackTrace()
+                onComplete(null)
+            }
+        }
 
-        return match
     }
 
     fun reset() {

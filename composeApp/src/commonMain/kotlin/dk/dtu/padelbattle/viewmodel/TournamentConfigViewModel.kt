@@ -21,14 +21,20 @@ class TournamentConfigViewModel(
     private val matchDao: MatchDao
 ) : ViewModel() {
 
-    private val _tournamentName = MutableStateFlow("")
+    private val _tournamentName = MutableStateFlow("Turnering")
     val tournamentName: StateFlow<String> = _tournamentName.asStateFlow()
 
     private val _playerNames = MutableStateFlow<List<String>>(emptyList())
     val playerNames: StateFlow<List<String>> = _playerNames.asStateFlow()
 
-    private val _currentPlayerName = MutableStateFlow("")
+    private val _currentPlayerName = MutableStateFlow("Spiller 1") //TODO: Gør dette felt direkte ændringsbart ved klik.
     val currentPlayerName: StateFlow<String> = _currentPlayerName.asStateFlow()
+
+    private val _numberOfCourts = MutableStateFlow(1)
+    val numberOfCourts: StateFlow<Int> = _numberOfCourts.asStateFlow()
+
+    private val _pointsPerRound = MutableStateFlow(16)
+    val pointsPerRound: StateFlow<Int> = _pointsPerRound.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -39,6 +45,14 @@ class TournamentConfigViewModel(
 
     fun updateCurrentPlayerName(name: String) {
         _currentPlayerName.value = name
+    }
+
+    fun updateNumberOfCourts(courts: Int) {
+        _numberOfCourts.value = courts.coerceIn(1, 4)
+    }
+
+    fun updatePointsPerRound(points: Int) {
+        _pointsPerRound.value = points.coerceIn(1, 100)
     }
 
     fun addPlayer() {
@@ -106,9 +120,11 @@ class TournamentConfigViewModel(
     }
 
     fun reset() {
-        _tournamentName.value = ""
+        _tournamentName.value = "Tournement"
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
+        _numberOfCourts.value = 1
+        _pointsPerRound.value = 16
         _error.value = null
     }
 }

@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +43,9 @@ fun MatchListScreen(
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedMatchIndex by remember { mutableStateOf(0) }
-    var currentRound by rememberSaveable { mutableStateOf(1) }
+
+    // Brug currentRound fra ViewModel for at bevare state gennem recompositions
+    val currentRound by matchListViewModel.currentRound.collectAsState()
 
     // Track revision for recomposition when matches are updated in-place
     val revision by matchListViewModel.revision.collectAsState()
@@ -77,11 +78,14 @@ fun MatchListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { currentRound = (currentRound - 1).coerceAtLeast(minRound) },
+                    onClick = {
+                        val newRound = (currentRound - 1).coerceAtLeast(minRound)
+                        matchListViewModel.setCurrentRound(newRound)
+                    },
                     enabled = currentRound > minRound
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Forrige runde",
                         tint = if (currentRound > minRound)
                             MaterialTheme.colorScheme.primary
@@ -99,11 +103,14 @@ fun MatchListScreen(
                 )
 
                 IconButton(
-                    onClick = { currentRound = (currentRound + 1).coerceAtMost(maxRound) },
+                    onClick = {
+                        val newRound = (currentRound + 1).coerceAtMost(maxRound)
+                        matchListViewModel.setCurrentRound(newRound)
+                    },
                     enabled = currentRound < maxRound
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        imageVector = Icons.Default.ArrowForward,
                         contentDescription = "Næste runde",
                         tint = if (currentRound < maxRound)
                             MaterialTheme.colorScheme.primary

@@ -2,39 +2,26 @@ package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dk.dtu.padelbattle.data.dao.MatchDao
+import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.data.dao.TournamentDao
-import dk.dtu.padelbattle.data.entity.TournamentEntity
+import dk.dtu.padelbattle.data.mapper.getAllTournamentsWithDetails
+import dk.dtu.padelbattle.model.Tournament
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import kotlin.time.Clock
 
 class HomeViewModel(
-    private val tournamentDao: TournamentDao
+    private val tournamentDao: TournamentDao,
+    private val playerDao: PlayerDao,
+    private val matchDao: MatchDao
 ) : ViewModel() {
 
-    // Vi henter turneringer som et Flow og konverterer til StateFlow til UI'en.
-    // Vi bruger stateIn for at holde flowet aktivt, så længe UI'en lever.
-    val tournaments: StateFlow<List<TournamentEntity>> = tournamentDao.getAllTournaments()
+    // Henter fulde turneringer med spillere og kampe
+    val tournaments: StateFlow<List<Tournament>> = tournamentDao.getAllTournamentsWithDetails(playerDao, matchDao)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-
-    fun createDummyTournament() {
-        viewModelScope.launch {
-            val dummyId = "dummy_${Clock.System.now().toEpochMilliseconds()}"
-            val dummyTournament = TournamentEntity(
-                id = dummyId,
-                name = "Hygge Padel ${ (1..100).random() }", // Tilfældigt navn
-                type = "AMERICANO",
-                dateCreated = Clock.System.now().toEpochMilliseconds(),
-                isCompleted = true
-            )
-
-            tournamentDao.insertTournament(dummyTournament)
-        }
-    }
 }

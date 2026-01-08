@@ -40,8 +40,15 @@ fun NavigationGraph(
             HomeScreen(
                 viewModel = homeViewModel,
                 onGoToTournamentScreen = {
-                    navController.navigate(ChooseTournament)},
-                    onTournamentClicked = { // TODO: } 
+                    navController.navigate(ChooseTournament)
+                },
+                onTournamentClicked = { tournamentId ->
+                    // Find the tournament from the current state
+                    val tournament = homeViewModel.tournaments.value.find { it.id == tournamentId }
+                    if (tournament != null) {
+                        tournamentViewModel.setTournament(tournament)
+                        navController.navigate(TournamentView(tournamentName = tournament.name))
+                    }
                 }
             )
         }

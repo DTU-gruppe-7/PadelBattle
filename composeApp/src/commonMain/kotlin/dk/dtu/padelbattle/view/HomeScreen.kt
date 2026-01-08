@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dk.dtu.padelbattle.data.entity.TournamentEntity
+import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import androidx.compose.ui.graphics.Color // HUSK at importere denne!
 
@@ -50,16 +50,6 @@ fun HomeScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-
-            Button(
-                onClick = { viewModel.createDummyTournament() },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                Text("Opret TEST Turnering (Dummy)")
-            }
-
-
             Text(
                 text = "Dine Turneringer",
                 style = MaterialTheme.typography.headlineMedium,
@@ -115,7 +105,7 @@ fun HomeScreen(
 
 @Composable
 fun TournamentItemCard(
-    tournament: TournamentEntity,
+    tournament: Tournament,
     onClick: () -> Unit
 ) {
     Card(
@@ -151,7 +141,7 @@ fun TournamentItemCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${tournament.type} • ${formatDate(tournament.dateCreated)}",
+                        text = "${tournament.type.name} • ${formatDate(tournament.dateCreated)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

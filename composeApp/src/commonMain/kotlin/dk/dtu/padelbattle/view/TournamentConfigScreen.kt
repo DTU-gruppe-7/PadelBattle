@@ -233,10 +233,9 @@ fun TournamentConfigScreen(
         // Floating checkmark button in top-right corner
         FloatingActionButton(
             onClick = {
-                val tournament = viewModel.createTournament(tournamentType)
-                if (tournament != null) {
+                viewModel.createTournament(tournamentType, onSuccess = { tournament ->
                     onTournamentCreated(tournament)
-                }
+                })
             },
             modifier = Modifier
                 .align(Alignment.TopEnd)

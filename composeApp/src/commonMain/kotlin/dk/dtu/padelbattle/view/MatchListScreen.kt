@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ fun MatchListScreen(
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedMatchIndex by remember { mutableStateOf(0) }
+    var currentRound by rememberSaveable { mutableStateOf(1) }
 
     // Track revision for recomposition when matches are updated in-place
     val revision by matchListViewModel.revision.collectAsState()
@@ -52,6 +54,13 @@ fun MatchListScreen(
         matchListViewModel.setMatches(matches)
     }
 
+    // Beregn antallet af runder
+    val maxRound = matches.maxOfOrNull { it.roundNumber } ?: 1
+    val minRound = matches.minOfOrNull { it.roundNumber } ?: 1
+
+    // Filtrer matches for den aktuelle runde
+    val currentRoundMatches = matches.filter { it.roundNumber == currentRound }
+
     // Brug key() til at tvinge recomposition ved revision changes
     key(revision) {
         Column(
@@ -59,24 +68,60 @@ fun MatchListScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Navigation header med pile
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val matchesByRound = matches.groupBy { it.roundNumber }
-
-            matchesByRound.forEach { (round, roundMatches) ->
-                item {
-                    Text(
-                        text = "Runde $round",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                IconButton(
+                    onClick = { currentRound = (currentRound - 1).coerceAtLeast(minRound) },
+                    enabled = currentRound > minRound
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Forrige runde",
+                        tint = if (currentRound > minRound)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(4.dp)
                     )
                 }
 
-                items(roundMatches.size) { index ->
-                    val match = roundMatches[index]
+                Text(
+                    text = "Runde $currentRound",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                IconButton(
+                    onClick = { currentRound = (currentRound + 1).coerceAtMost(maxRound) },
+                    enabled = currentRound < maxRound
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Næste runde",
+                        tint = if (currentRound < maxRound)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Liste med kampe for den aktuelle runde
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(currentRoundMatches.size) { index ->
+                    val match = currentRoundMatches[index]
                     MatchCard(
                         match = match,
                         onEditClick = {
@@ -86,7 +131,6 @@ fun MatchListScreen(
                         }
                     )
                 }
-            }
             }
         }
     }
@@ -127,79 +171,100 @@ private fun MatchCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Header med bane nummer (centreret)
+            Text(
+                text = "Bane ${match.courtNumber}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(bottom = 12.dp)
+            )
+
+            // Hovedlayout: Hold 1 til venstre, scores i midten, Hold 2 til højre
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Bane ${match.courtNumber}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-                IconButton(onClick = onEditClick) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Rediger resultat"
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+                // Hold 1 (venstre side)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
                     Text(
-                        text = "${match.team1Player1.name} & ${match.team1Player2.name}",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = match.team1Player1.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = match.team1Player2.name,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                 }
-                if (match.isPlayed) {
+
+                // Score bokse i midten (klikbare)
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Card(
+                        onClick = onEditClick,
+                        modifier = Modifier.padding(4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Text(
+                            text = if (match.isPlayed) match.scoreTeam1.toString() else "-",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+
                     Text(
-                        text = match.scoreTeam1.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
+                        text = ":",
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.padding(horizontal = 4.dp)
                     )
-                } else {
-                    Text(
-                        text = "-",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
+
+                    Card(
+                        onClick = onEditClick,
+                        modifier = Modifier.padding(4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Text(
+                            text = if (match.isPlayed) match.scoreTeam2.toString() else "-",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
-            }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+                // Hold 2 (højre side)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.End
+                ) {
                     Text(
-                        text = "${match.team2Player1.name} & ${match.team2Player2.name}",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = match.team2Player1.name,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
-                }
-                if (match.isPlayed) {
                     Text(
-                        text = match.scoreTeam2.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    Text(
-                        text = "-",
-                        style = MaterialTheme.typography.headlineSmall
+                        text = match.team2Player2.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -207,9 +272,10 @@ private fun MatchCard(
             if (!match.isPlayed) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Kamp ikke afviklet",
+                    text = "Klik på score for at indtaste resultat",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
         }

@@ -30,39 +30,59 @@ class MatchEditViewModel : ViewModel() {
      */
     fun setMatch(match: Match) {
         _currentMatch.value = match
-        _scoreTeam1.value = match.scoreTeam1
-        _scoreTeam2.value = match.scoreTeam2
+        if (match.isPlayed) {
+            _scoreTeam1.value = match.scoreTeam1
+            _scoreTeam2.value = match.scoreTeam2
+        } else {
+            // Standardværdier for nye kampe
+            _scoreTeam1.value = TOTAL_POINTS / 2
+            _scoreTeam2.value = TOTAL_POINTS / 2
+        }
+    }
+
+    companion object {
+        const val TOTAL_POINTS = 16
     }
 
     fun updateScoreTeam1(score: Int) {
-        if (score >= 0) {
+        if (score >= 0 && score <= TOTAL_POINTS) {
             _scoreTeam1.value = score
+            _scoreTeam2.value = TOTAL_POINTS - score
         }
     }
 
     fun updateScoreTeam2(score: Int) {
-        if (score >= 0) {
+        if (score >= 0 && score <= TOTAL_POINTS) {
             _scoreTeam2.value = score
+            _scoreTeam1.value = TOTAL_POINTS - score
         }
     }
 
     fun incrementScoreTeam1() {
-        _scoreTeam1.value++
+        if (_scoreTeam1.value < TOTAL_POINTS) {
+            _scoreTeam1.value++
+            _scoreTeam2.value = TOTAL_POINTS - _scoreTeam1.value
+        }
     }
 
     fun decrementScoreTeam1() {
         if (_scoreTeam1.value > 0) {
             _scoreTeam1.value--
+            _scoreTeam2.value = TOTAL_POINTS - _scoreTeam1.value
         }
     }
 
     fun incrementScoreTeam2() {
-        _scoreTeam2.value++
+        if (_scoreTeam2.value < TOTAL_POINTS) {
+            _scoreTeam2.value++
+            _scoreTeam1.value = TOTAL_POINTS - _scoreTeam2.value
+        }
     }
 
     fun decrementScoreTeam2() {
         if (_scoreTeam2.value > 0) {
             _scoreTeam2.value--
+            _scoreTeam1.value = TOTAL_POINTS - _scoreTeam2.value
         }
     }
 

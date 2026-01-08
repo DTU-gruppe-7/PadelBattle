@@ -18,6 +18,16 @@ class MatchListViewModel : ViewModel() {
     private val _revision = MutableStateFlow(0)
     val revision: StateFlow<Int> = _revision.asStateFlow()
 
+    private val _currentRound = MutableStateFlow(1)
+    val currentRound: StateFlow<Int> = _currentRound.asStateFlow()
+
+    /**
+     * Sætter den aktuelle runde.
+     */
+    fun setCurrentRound(round: Int) {
+        _currentRound.value = round
+    }
+
     /**
      * Sætter listen af kampe.
      * Opdaterer state, hvilket automatisk trigger recomposition.

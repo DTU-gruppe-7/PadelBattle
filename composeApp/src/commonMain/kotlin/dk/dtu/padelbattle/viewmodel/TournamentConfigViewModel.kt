@@ -44,10 +44,6 @@ class TournamentConfigViewModel(
     //husk at spørg de andre om det skal ligge nede i modellen istedet
     private val _pointsToWin = MutableStateFlow(32)
 
-    private val _numberOfCourts = MutableStateFlow(1)
-    val numberOfCourts: StateFlow<Int> = _numberOfCourts.asStateFlow()
-
-
     fun updateTournamentName(name: String) {
         _tournamentName.value = name
     }

@@ -129,7 +129,7 @@ fun TournamentConfigScreen(
                         modifier = Modifier.padding(vertical = 8.dp)
                     ) {
                         Text(
-                            text = "Antal baner",
+                            text = "Antal Baner",
                             style = MaterialTheme.typography.labelMedium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -156,7 +156,7 @@ fun TournamentConfigScreen(
                         modifier = Modifier.padding(vertical = 8.dp)
                     ) {
                         Text(
-                            text = "Point per runde",
+                            text = "Point pr. Runde",
                             style = MaterialTheme.typography.labelMedium
                         )
                         Spacer(modifier = Modifier.height(4.dp))

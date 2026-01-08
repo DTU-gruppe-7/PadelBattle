@@ -12,6 +12,8 @@ import dk.dtu.padelbattle.model.TournamentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlin.math.max
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -39,6 +41,13 @@ class TournamentConfigViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    //husk at spørg de andre om det skal ligge nede i modellen istedet
+    private val _pointsToWin = MutableStateFlow(32)
+
+    private val _numberOfCourts = MutableStateFlow(1)
+    val numberOfCourts: StateFlow<Int> = _numberOfCourts.asStateFlow()
+
+
     fun updateTournamentName(name: String) {
         _tournamentName.value = name
     }
@@ -47,6 +56,11 @@ class TournamentConfigViewModel(
         _currentPlayerName.value = name
     }
 
+    // Metode til UI'en der gør at vi kan ændre antal baner der skal bruges
+    fun setNumberOfCourts(count: Int) {
+        val maxCourts = calculateMaxCourts(_playerNames.value.size)
+    }
+    
     fun updateNumberOfCourts(courts: Int) {
         _numberOfCourts.value = courts.coerceIn(1, 4)
     }
@@ -58,17 +72,32 @@ class TournamentConfigViewModel(
     fun addPlayer() {
         val name = _currentPlayerName.value.trim()
         if (name.isNotBlank() && _playerNames.value.size < 16) {
-            _playerNames.value = _playerNames.value + name
+            val newPlayerList = _playerNames.value + name
+            _playerNames.value = newPlayerList
             _currentPlayerName.value = ""
         }
     }
 
     fun removePlayer(index: Int) {
-        _playerNames.value = _playerNames.value.toMutableList().apply { removeAt(index) }
+        val currentList = _playerNames.value.toMutableList()
+        if (index in currentList.indices) {
+            currentList.removeAt(index)
+            _playerNames.value = currentList
+
+            //Dette sikrer at vi ikke kan slwtte en spiller hvis det vil resultere i et ulovligt antal baner. Eksempelvis hvis man ville slette den 8. spiller og havde opgivet to baner
+            val maxAllowedCourts = calculateMaxCourts(currentList.size)
+            if (_numberOfCourts.value > maxAllowedCourts) {
+                _numberOfCourts.value = maxAllowedCourts
+            }
+        }
+    }
+
+    private fun calculateMaxCourts(playerCount: Int): Int {
+        return (playerCount / 4).coerceAtLeast(1)
     }
 
     fun canStartTournament(): Boolean {
-        return _tournamentName.value.isNotBlank() && _playerNames.value.size in 4..16
+        return _tournamentName.value.isNotBlank() && _playerNames.value.size >= 4
     }
 
     /**

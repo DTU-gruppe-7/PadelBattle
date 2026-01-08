@@ -263,7 +263,7 @@ fun TournamentConfigScreen(
         // Courts Dialog
         if (showCourtsDialog) {
             NumberPickerDialog(
-                title = "Antal baner",
+                title = "Antal Baner",
                 currentValue = numberOfCourts,
                 minValue = 1,
                 maxValue = 4,
@@ -275,7 +275,7 @@ fun TournamentConfigScreen(
         // Points Dialog
         if (showPointsDialog) {
             NumberPickerDialog(
-                title = "Point per runde",
+                title = "Point pr. Runde",
                 currentValue = pointsPerRound,
                 minValue = 1,
                 maxValue = 32,

@@ -16,7 +16,7 @@ class TournamentConfigViewModel : ViewModel() {
     private val _playerNames = MutableStateFlow<List<String>>(emptyList())
     val playerNames: StateFlow<List<String>> = _playerNames.asStateFlow()
 
-    private val _currentPlayerName = MutableStateFlow("")
+    private val _currentPlayerName = MutableStateFlow("Spiller 1") //TODO: Gør dette felt direkte ændringsbart ved klik.
     val currentPlayerName: StateFlow<String> = _currentPlayerName.asStateFlow()
 
     private val _numberOfCourts = MutableStateFlow(1)

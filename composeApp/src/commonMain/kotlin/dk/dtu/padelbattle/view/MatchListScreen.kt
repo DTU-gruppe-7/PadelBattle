@@ -37,6 +37,7 @@ import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 @Composable
 fun MatchListScreen(
     matches: List<Match>,
+    tournamentId: String,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
     onMatchUpdated: () -> Unit
@@ -96,6 +97,7 @@ fun MatchListScreen(
         val originalMatch = matches[selectedMatchIndex.coerceIn(0, matches.size - 1)]
         MatchEditDialog(
             match = originalMatch,
+            tournamentId = tournamentId,
             viewModel = matchEditViewModel,
             onSave = {
                 showEditDialog = false

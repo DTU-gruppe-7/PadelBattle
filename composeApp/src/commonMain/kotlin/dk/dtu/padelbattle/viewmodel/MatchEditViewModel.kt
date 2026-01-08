@@ -1,20 +1,27 @@
 package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dk.dtu.padelbattle.data.dao.MatchDao
+import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchResult
 import dk.dtu.padelbattle.model.utils.MatchResultService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel til at håndtere redigering af kampresultater.
  * Koordinerer UI-tilstand og delegerer forretningslogik til MatchResultService.
  */
-class MatchEditViewModel : ViewModel() {
+class MatchEditViewModel(
+    private val matchDao: MatchDao,
+    private val playerDao: PlayerDao
+) : ViewModel() {
 
-    private val matchResultService = MatchResultService()
+    private val matchResultService = MatchResultService(matchDao, playerDao)
 
     private val _scoreTeam1 = MutableStateFlow(0)
     val scoreTeam1: StateFlow<Int> = _scoreTeam1.asStateFlow()
@@ -69,18 +76,40 @@ class MatchEditViewModel : ViewModel() {
     /**
      * Gemmer kampresultatet via MatchResultService.
      * Returnerer den opdaterede kamp.
+     * @param tournamentId ID på turneringen som kampen tilhører
+     * @param onComplete Callback når gemning er færdig
      */
-    fun saveMatch(): Match? {
-        val match = _currentMatch.value ?: return null
+    fun saveMatch(tournamentId: String, onComplete: (Match?) -> Unit) {
+        val match = _currentMatch.value
+        if (match == null) {
+            onComplete(null)
+            return
+        }
+
+        // Valider tournamentId
+        if (tournamentId.isBlank()) {
+            println("ERROR: tournamentId is blank, cannot save match")
+            onComplete(null)
+            return
+        }
+
         val newResult = MatchResult(
             scoreTeam1 = _scoreTeam1.value,
             scoreTeam2 = _scoreTeam2.value
         )
 
-        // Delegér forretningslogik til service
-        matchResultService.recordMatchResult(match, newResult)
+        // Delegér forretningslogik til service med fejlhåndtering
+        viewModelScope.launch {
+            try {
+                matchResultService.recordMatchResult(match, newResult, tournamentId)
+                onComplete(match)
+            } catch (e: Exception) {
+                println("ERROR saving match: ${e.message}")
+                e.printStackTrace()
+                onComplete(null)
+            }
+        }
 
-        return match
     }
 
     fun reset() {

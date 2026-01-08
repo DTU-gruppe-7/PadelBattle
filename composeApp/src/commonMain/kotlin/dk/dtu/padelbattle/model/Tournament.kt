@@ -9,7 +9,8 @@ class Tournament(
     val dateCreated: Long,
     val numberOfCourts: Int = 1, // Default to 1, valid range: 1-4
     val players: MutableList<Player> = mutableListOf(),
-    val matches: MutableList<Match> = mutableListOf()
+    val matches: MutableList<Match> = mutableListOf(),
+    var isCompleted: Boolean = false
 ) {
 
     // --- TRACKING DATA ---
@@ -216,7 +217,6 @@ class Tournament(
             candidates.remove(bestMatch)
 
             val match = Match(
-                matchNumber = startingMatchNumber + roundMatches.size,
                 roundNumber = roundNumber,
                 courtNumber = roundMatches.size + 1,
                 team1Player1 = bestMatch.t1p1,

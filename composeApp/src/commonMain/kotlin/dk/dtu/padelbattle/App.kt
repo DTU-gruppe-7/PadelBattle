@@ -31,14 +31,30 @@ fun App(
     database: PadelBattleDatabase
 ) {
     // Brug viewModel() til at bevare ViewModels ved configuration changes
-    val homeViewModel: HomeViewModel = viewModel { HomeViewModel(database.tournamentDao()) }
+    val homeViewModel: HomeViewModel = viewModel {
+        HomeViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
+    }
     val chooseTournamentViewModel: ChooseTournamentViewModel = viewModel { ChooseTournamentViewModel() }
-    val tournamentConfigViewModel: TournamentConfigViewModel = viewModel { TournamentConfigViewModel() }
+    val tournamentConfigViewModel: TournamentConfigViewModel = viewModel {
+        TournamentConfigViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
+    }
     val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel() }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
-    val matchEditViewModel: MatchEditViewModel = viewModel { MatchEditViewModel() }
+    val matchEditViewModel: MatchEditViewModel = viewModel {
+        MatchEditViewModel(
+            database.matchDao(),
+            database.playerDao()
+        )
+    }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
-
 
     MaterialTheme {
         val navController = rememberNavController()

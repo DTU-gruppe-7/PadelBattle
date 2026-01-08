@@ -154,10 +154,9 @@ fun TournamentConfigScreen(
 
         Button(
             onClick = {
-                val tournament = viewModel.createTournament(tournamentType)
-                if (tournament != null) {
+                viewModel.createTournament(tournamentType, onSuccess = { tournament ->
                     onTournamentCreated(tournament)
-                }
+                })
             },
             enabled = viewModel.canStartTournament(),
             modifier = Modifier.fillMaxWidth()

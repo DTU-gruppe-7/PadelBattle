@@ -63,16 +63,25 @@ fun TournamentViewScreen(
         }
 
         when (selectedTab) {
-            0 -> MatchListScreen(
-                matches = tournament?.matches ?: emptyList(),
-                matchEditViewModel = matchEditViewModel,
-                matchListViewModel = matchListViewModel,
-                onMatchUpdated = {
-                    viewModel.notifyTournamentUpdated()
-                    // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
-                    standingsViewModel.setPlayers(tournament?.players?.map { it.copy() } ?: emptyList())
+            0 -> {
+                val currentTournament = tournament
+                if (currentTournament != null) {
+                    MatchListScreen(
+                        matches = currentTournament.matches,
+                        tournamentId = currentTournament.id,
+                        matchEditViewModel = matchEditViewModel,
+                        matchListViewModel = matchListViewModel,
+                        onMatchUpdated = {
+                            viewModel.notifyTournamentUpdated()
+                            // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
+                            standingsViewModel.setPlayers(currentTournament.players.map { it.copy() })
+                        }
+                    )
+                } else {
+                    // Vis loading eller tom tilstand
+                    Text("Indlæser turnering...")
                 }
-            )
+            }
             1 -> StandingsScreen(
                 players = tournament?.players ?: emptyList(),
                 viewModel = standingsViewModel,

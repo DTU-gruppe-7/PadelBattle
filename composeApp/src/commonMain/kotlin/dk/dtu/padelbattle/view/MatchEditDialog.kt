@@ -18,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +32,14 @@ import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 @Composable
 fun MatchEditDialog(
     match: Match,
+    tournamentId: String,
     viewModel: MatchEditViewModel,
     onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val scoreTeam1 by viewModel.scoreTeam1.collectAsState()
     val scoreTeam2 by viewModel.scoreTeam2.collectAsState()
+    var isSaving by remember { mutableStateOf(false) }
 
     // Initialiser viewModel med kampen
     LaunchedEffect(match) {
@@ -129,11 +134,25 @@ fun MatchEditDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
                         onClick = {
-                            viewModel.saveMatch()
-                            onSave()
-                        }
+                            if (!isSaving) {
+                                isSaving = true
+                                viewModel.saveMatch(tournamentId) { savedMatch ->
+                                    isSaving = false
+                                    if (savedMatch != null) {
+                                        onSave()
+                                    } else {
+                                        // Fejl skete - lad dialogen være åben
+                                        println("Failed to save match")
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isSaving
                     ) {
-                        Text("Gem", fontWeight = FontWeight.Bold)
+                        Text(
+                            if (isSaving) "Gemmer..." else "Gem",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

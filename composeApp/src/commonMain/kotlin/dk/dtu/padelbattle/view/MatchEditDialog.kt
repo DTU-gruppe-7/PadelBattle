@@ -35,13 +35,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import dk.dtu.padelbattle.model.Match
+import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun MatchEditDialog(
     match: Match,
-    tournamentId: String,
+    currentTournament: Tournament,
     viewModel: MatchEditViewModel,
     onSave: () -> Unit,
     onDismiss: () -> Unit
@@ -49,10 +50,11 @@ fun MatchEditDialog(
     val scoreTeam1 by viewModel.scoreTeam1.collectAsState()
     val scoreTeam2 by viewModel.scoreTeam2.collectAsState()
     var isSaving by remember { mutableStateOf(false) }
+    val pointsPerMatch = currentTournament.pointsPerMatch
 
     // Initialiser viewModel med kampen
     LaunchedEffect(match) {
-        viewModel.setMatch(match)
+        viewModel.setMatch(match, currentTournament.pointsPerMatch)
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -112,7 +114,8 @@ fun MatchEditDialog(
                     ) {
                         ScoreWheelPicker(
                             score = scoreTeam1,
-                            onScoreChange = { viewModel.updateScoreTeam1(it) }
+                            onScoreChange = { viewModel.updateScoreTeam1(it) },
+                            maxScore = pointsPerMatch
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -128,7 +131,8 @@ fun MatchEditDialog(
 
                         ScoreWheelPicker(
                             score = scoreTeam2,
-                            onScoreChange = { viewModel.updateScoreTeam2(it) }
+                            onScoreChange = { viewModel.updateScoreTeam2(it) },
+                            maxScore = pointsPerMatch
                         )
                     }
 
@@ -164,7 +168,7 @@ fun MatchEditDialog(
                         onClick = {
                             if (!isSaving) {
                                 isSaving = true
-                                viewModel.saveMatch(tournamentId) { savedMatch ->
+                                viewModel.saveMatch(currentTournament.id) { savedMatch ->
                                     isSaving = false
                                     if (savedMatch != null) {
                                         onSave()
@@ -192,7 +196,7 @@ fun MatchEditDialog(
 private fun ScoreWheelPicker(
     score: Int,
     onScoreChange: (Int) -> Unit,
-    maxScore: Int = 16
+    maxScore: Int
 ) {
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = score)
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)

@@ -23,6 +23,7 @@ fun Tournament.toEntity(): TournamentEntity {
         type = this.type.name,
         dateCreated = this.dateCreated,
         numberOfCourts = this.numberOfCourts,
+        pointsPerMatch = this.pointsPerMatch,
         isCompleted = this.isCompleted
     )
 }
@@ -141,6 +142,7 @@ fun TournamentEntity.toTournament(
         type = TournamentType.valueOf(this.type),
         dateCreated = this.dateCreated,
         numberOfCourts = this.numberOfCourts,
+        pointsPerMatch = this.pointsPerMatch,
         players = players,
         matches = matches,
         isCompleted = this.isCompleted

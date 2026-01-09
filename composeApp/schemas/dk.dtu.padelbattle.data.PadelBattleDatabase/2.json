@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "f08c9c4db5400f0bdbef3df5a5ede2ae",
+    "identityHash": "c426e8760df60c3947efc10b861b3cf0",
     "entities": [
       {
         "tableName": "tournaments",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `dateCreated` INTEGER NOT NULL, `numberOfCourts` INTEGER NOT NULL, `isCompleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `dateCreated` INTEGER NOT NULL, `numberOfCourts` INTEGER NOT NULL, `pointsPerMatch` INTEGER NOT NULL, `isCompleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -35,6 +35,12 @@
           {
             "fieldPath": "numberOfCourts",
             "columnName": "numberOfCourts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pointsPerMatch",
+            "columnName": "pointsPerMatch",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -241,7 +247,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f08c9c4db5400f0bdbef3df5a5ede2ae')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c426e8760df60c3947efc10b861b3cf0')"
     ]
   }
 }

@@ -29,14 +29,14 @@ class TournamentConfigViewModel(
     private val _playerNames = MutableStateFlow<List<String>>(emptyList())
     val playerNames: StateFlow<List<String>> = _playerNames.asStateFlow()
 
-    private val _currentPlayerName = MutableStateFlow("Spiller 1") //TODO: Gør dette felt direkte ændringsbart ved klik.
+    private val _currentPlayerName = MutableStateFlow("")
     val currentPlayerName: StateFlow<String> = _currentPlayerName.asStateFlow()
 
     private val _numberOfCourts = MutableStateFlow(1)
     val numberOfCourts: StateFlow<Int> = _numberOfCourts.asStateFlow()
 
-    private val _pointsPerRound = MutableStateFlow(16)
-    val pointsPerRound: StateFlow<Int> = _pointsPerRound.asStateFlow()
+    private val _pointsPerMatch = MutableStateFlow(16)
+    val pointsPerRound: StateFlow<Int> = _pointsPerMatch.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -61,8 +61,8 @@ class TournamentConfigViewModel(
         _numberOfCourts.value = courts.coerceIn(1, 4)
     }
 
-    fun updatePointsPerRound(points: Int) {
-        _pointsPerRound.value = points.coerceIn(1, 100)
+    fun updatePointsPerMatch(points: Int) {
+        _pointsPerMatch.value = points.coerceIn(1, 100)
     }
 
     fun addPlayer() {
@@ -118,6 +118,7 @@ class TournamentConfigViewModel(
                     type = tournamentType,
                     dateCreated = Clock.System.now().toEpochMilliseconds(),
                     numberOfCourts = (players.size / 4).coerceIn(1, 4),
+                    pointsPerMatch = _pointsPerMatch.value,
                     players = players
                 )
 
@@ -149,7 +150,7 @@ class TournamentConfigViewModel(
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
         _numberOfCourts.value = 1
-        _pointsPerRound.value = 16
+        _pointsPerMatch.value = 16
         _error.value = null
     }
 }

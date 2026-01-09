@@ -8,7 +8,7 @@ class Tournament(
     val type: TournamentType,
     val dateCreated: Long,
     val numberOfCourts: Int = 1, // Default to 1, valid range: 1-4
-    val winScore: Int = 32,
+    val pointsPerMatch: Int = 16,
     val players: MutableList<Player> = mutableListOf(),
     val matches: MutableList<Match> = mutableListOf(),
     var isCompleted: Boolean = false

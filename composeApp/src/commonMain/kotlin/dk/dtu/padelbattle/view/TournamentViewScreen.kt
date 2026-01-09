@@ -68,7 +68,7 @@ fun TournamentViewScreen(
                 if (currentTournament != null) {
                     MatchListScreen(
                         matches = currentTournament.matches,
-                        tournamentId = currentTournament.id,
+                        currentTournament = currentTournament,
                         matchEditViewModel = matchEditViewModel,
                         matchListViewModel = matchListViewModel,
                         onMatchUpdated = {

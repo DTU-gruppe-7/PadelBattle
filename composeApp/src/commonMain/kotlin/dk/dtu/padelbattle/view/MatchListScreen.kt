@@ -31,13 +31,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Match
+import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 
 @Composable
 fun MatchListScreen(
     matches: List<Match>,
-    tournamentId: String,
+    currentTournament: Tournament,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
     onMatchUpdated: () -> Unit
@@ -148,7 +149,7 @@ fun MatchListScreen(
         val originalMatch = matches[selectedMatchIndex.coerceIn(0, matches.size - 1)]
         MatchEditDialog(
             match = originalMatch,
-            tournamentId = tournamentId,
+            currentTournament = currentTournament,
             viewModel = matchEditViewModel,
             onSave = {
                 showEditDialog = false

@@ -21,6 +21,9 @@ class MatchEditViewModel(
     private val playerDao: PlayerDao
 ) : ViewModel() {
 
+    private val _pointsPerMatch = MutableStateFlow(1)
+    val pointsPerMatch: StateFlow<Int> = _pointsPerMatch.asStateFlow()
+
     private val matchResultService = MatchResultService(matchDao, playerDao)
 
     private val _scoreTeam1 = MutableStateFlow(0)
@@ -35,61 +38,58 @@ class MatchEditViewModel(
     /**
      * Initialiserer viewModel med en kamp
      */
-    fun setMatch(match: Match) {
+    fun setMatch(match: Match, pointsPerMatch: Int) {
+        _pointsPerMatch.value = pointsPerMatch
         _currentMatch.value = match
         if (match.isPlayed) {
             _scoreTeam1.value = match.scoreTeam1
             _scoreTeam2.value = match.scoreTeam2
         } else {
             // Standardværdier for nye kampe
-            _scoreTeam1.value = TOTAL_POINTS / 2
-            _scoreTeam2.value = TOTAL_POINTS / 2
+            _scoreTeam1.value = pointsPerMatch / 2
+            _scoreTeam2.value = pointsPerMatch / 2
         }
     }
 
-    companion object {
-        const val TOTAL_POINTS = 16
-    }
-
     fun updateScoreTeam1(score: Int) {
-        if (score >= 0 && score <= TOTAL_POINTS) {
+        if (score >= 0 && score <= pointsPerMatch.value) {
             _scoreTeam1.value = score
-            _scoreTeam2.value = TOTAL_POINTS - score
+            _scoreTeam2.value = pointsPerMatch.value - score
         }
     }
 
     fun updateScoreTeam2(score: Int) {
-        if (score >= 0 && score <= TOTAL_POINTS) {
+        if (score >= 0 && score <= pointsPerMatch.value) {
             _scoreTeam2.value = score
-            _scoreTeam1.value = TOTAL_POINTS - score
+            _scoreTeam1.value = pointsPerMatch.value - score
         }
     }
 
     fun incrementScoreTeam1() {
-        if (_scoreTeam1.value < TOTAL_POINTS) {
+        if (_scoreTeam1.value < pointsPerMatch.value) {
             _scoreTeam1.value++
-            _scoreTeam2.value = TOTAL_POINTS - _scoreTeam1.value
+            _scoreTeam2.value = pointsPerMatch.value - _scoreTeam1.value
         }
     }
 
     fun decrementScoreTeam1() {
         if (_scoreTeam1.value > 0) {
             _scoreTeam1.value--
-            _scoreTeam2.value = TOTAL_POINTS - _scoreTeam1.value
+            _scoreTeam2.value = pointsPerMatch.value - _scoreTeam1.value
         }
     }
 
     fun incrementScoreTeam2() {
-        if (_scoreTeam2.value < TOTAL_POINTS) {
+        if (_scoreTeam2.value < pointsPerMatch.value) {
             _scoreTeam2.value++
-            _scoreTeam1.value = TOTAL_POINTS - _scoreTeam2.value
+            _scoreTeam1.value = pointsPerMatch.value - _scoreTeam2.value
         }
     }
 
     fun decrementScoreTeam2() {
         if (_scoreTeam2.value > 0) {
             _scoreTeam2.value--
-            _scoreTeam1.value = TOTAL_POINTS - _scoreTeam2.value
+            _scoreTeam1.value = pointsPerMatch.value - _scoreTeam2.value
         }
     }
 

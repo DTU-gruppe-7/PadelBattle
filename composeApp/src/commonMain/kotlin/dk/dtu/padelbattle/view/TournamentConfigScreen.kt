@@ -278,7 +278,7 @@ fun TournamentConfigScreen(
                 currentValue = pointsPerRound,
                 minValue = 1,
                 maxValue = 32,
-                onValueChange = { viewModel.updatePointsPerRound(it) },
+                onValueChange = { viewModel.updatePointsPerMatch(it) },
                 onDismiss = { showPointsDialog = false }
             )
         }

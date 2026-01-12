@@ -34,9 +34,29 @@ fun HomeScreen(
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
+    val showDeleteConfirmation by viewModel.deleteConfirmation.showDeleteConfirmation.collectAsState()
 
     val activeTournaments = tournaments.filter { !it.isCompleted }
     val completedTournaments = tournaments.filter { it.isCompleted }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.deleteConfirmation.dismiss() },
+            title = { Text("Slet turnering") },
+            text = { Text("Er du sikker på, at du vil slette denne turnering? Denne handling kan ikke fortrydes.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteConfirmation.confirm() }) {
+                    Text("Slet", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) {
+                    Text("Annuller")
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -119,10 +139,7 @@ fun HomeScreen(
                         TournamentItemCard(
                             tournament = currentTournaments[index],
                             onClick = { onTournamentClicked(currentTournaments[index].id) },
-                            // TODO: Tilføj onDuplicate handler her når funktionaliteten implementeres
-                            // onDuplicate = { tournament -> viewModel.duplicateTournament(tournament) },
-                            // TODO: Tilføj onDelete handler her når funktionaliteten implementeres
-                            // onDelete = { tournament -> viewModel.deleteTournament(tournament) }
+                            onDelete = { tournament -> viewModel.showDeleteConfirmationDialog(tournament) }
                         )
                     }
                 }
@@ -137,23 +154,23 @@ fun TournamentItemCard(
     tournament: Tournament,
     onClick: () -> Unit,
     onDuplicate: ((Tournament) -> Unit)? = null, // TODO: Implementer duplikerings-funktionalitet
-    onDelete: ((Tournament) -> Unit)? = null // TODO: Implementer sletnings-funktionalitet
+    onDelete: ((Tournament) -> Unit)? = null
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
-            // TODO: Håndter swipe-handlinger her
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    // Swipe til højre -> Dupliker turnering
-                    // TODO: Kald onDuplicate?.invoke(tournament) når funktionaliteten er klar
+                    // Swipe til højre -> Vis bekræftelsesdialog
+                    onDelete?.invoke(tournament)
+                    false  // Forhindre dismiss - dialogen håndterer sletning
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
-                    // Swipe til venstre -> Slet turnering
-                    // TODO: Kald onDelete?.invoke(tournament) når funktionaliteten er klar
+                    // Swipe til venstre -> Dupliker turnering (TODO)
+                    // onDuplicate?.invoke(tournament)
+                    false  // Forhindre dismiss indtil implementeret
                 }
-                else -> {}
+                else -> false
             }
-            false // Returnér false for at forhindre faktisk fjernelse af kortet
         },
         positionalThreshold = { it * 0.25f }
     )

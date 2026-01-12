@@ -5,11 +5,16 @@ import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.dao.MatchDao
 import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.data.dao.TournamentDao
+import dk.dtu.padelbattle.data.mapper.deleteTournamentFromDao
 import dk.dtu.padelbattle.data.mapper.getAllTournamentsWithDetails
 import dk.dtu.padelbattle.model.Tournament
+import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val tournamentDao: TournamentDao,
@@ -24,4 +29,24 @@ class HomeViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    // Fælles handler til delete confirmation dialog
+    val deleteConfirmation = DeleteConfirmationHandler()
+
+    /**
+     * Viser bekræftelsesdialog for sletning af turnering.
+     */
+    fun showDeleteConfirmationDialog(tournament: Tournament) {
+        deleteConfirmation.show {
+            viewModelScope.launch {
+                try {
+                    deleteTournamentFromDao(tournament.id, tournamentDao)
+                    // Listen opdateres automatisk via StateFlow
+                } catch (e: Exception) {
+                    // Log fejl hvis nødvendigt
+                    println("Fejl ved sletning af turnering: ${e.message}")
+                }
+            }
+        }
+    }
 }

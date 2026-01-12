@@ -8,8 +8,8 @@ class Tournament(
     var name: String,
     val type: TournamentType,
     val dateCreated: Long,
-    val numberOfCourts: Int = 1,
-    val pointsPerMatch: Int = 16,
+    var numberOfCourts: Int = 1,
+    var pointsPerMatch: Int = 16,
     val players: MutableList<Player> = mutableListOf(),
     val matches: MutableList<Match> = mutableListOf(),
     var isCompleted: Boolean = false

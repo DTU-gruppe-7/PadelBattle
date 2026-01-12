@@ -39,20 +39,12 @@ class TournamentConfigViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    //husk at spørg de andre om det skal ligge nede i modellen istedet
-    private val _pointsToWin = MutableStateFlow(32)
-
     fun updateTournamentName(name: String) {
         _tournamentName.value = name
     }
 
     fun updateCurrentPlayerName(name: String) {
         _currentPlayerName.value = name
-    }
-
-    // Metode til UI'en der gør at vi kan ændre antal baner der skal bruges
-    fun setNumberOfCourts(count: Int) {
-        val maxCourts = calculateMaxCourts(_playerNames.value.size)
     }
     
     fun updateNumberOfCourts(courts: Int) {
@@ -144,7 +136,7 @@ class TournamentConfigViewModel(
     }
 
     fun reset() {
-        _tournamentName.value = "Tournement"
+        _tournamentName.value = "Turnering"
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
         _numberOfCourts.value = 1

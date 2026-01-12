@@ -142,7 +142,7 @@ fun HomeScreen(
 fun TournamentItemCard(
     tournament: Tournament,
     onClick: () -> Unit,
-    onDuplicate: ((Tournament) -> Unit)? = null, // TODO: Implementer duplikerings-funktionalitet
+    onDuplicate: ((Tournament) -> Unit)? = null,
     onDelete: ((Tournament) -> Unit)? = null // TODO: Implementer sletnings-funktionalitet
 ) {
     val dismissState = rememberSwipeToDismissBoxState(

@@ -92,24 +92,23 @@ fun App(
         }
 
         // Hent turnering og opdater settings menu items baseret på current screen
+        val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
+        val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
         val currentTournament by tournamentViewModel.tournament.collectAsState()
         settingsViewModel.updateScreen(
             screen = currentScreen,
             tournament = currentTournament,
             onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
         )
-        val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
-        val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
-        val currentTournament by tournamentViewModel.tournament.collectAsState()
 
         // Opdater SettingsViewModel med den aktuelle turnering
         LaunchedEffect(currentTournament) {
-            settingsViewModel.setCurrentTournament(currentTournament) { newName ->
+            settingsViewModel.setCurrentTournament(currentTournament) {
                 // Notificer TournamentViewModel om ændringen
                 currentTournament?.let { tournament ->
                     tournamentViewModel.notifyTournamentUpdated()
                     // Naviger til TournamentView med det nye navn for at opdatere topbaren
-                    navController.navigate(TournamentView(tournamentName = newName)) {
+                    navController.navigate(TournamentView(tournamentName = tournament.name)) {
                         popUpTo(TournamentView::class) { inclusive = true }
                     }
                 }

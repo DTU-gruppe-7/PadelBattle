@@ -37,12 +37,12 @@ class SettingsViewModel(
 
     // Reference til den aktuelle turnering (sættes fra TournamentViewModel)
     private var currentTournament: Tournament? = null
-    private var onTournamentUpdated: ((String) -> Unit)? = null
+    private var onTournamentUpdated: (() -> Unit)? = null
 
     /**
      * Sætter den aktuelle turnering og callback for opdateringer
      */
-    fun setCurrentTournament(tournament: Tournament?, onUpdated: ((String) -> Unit)?) {
+    fun setCurrentTournament(tournament: Tournament?, onUpdated: (() -> Unit)?) {
         currentTournament = tournament
         onTournamentUpdated = onUpdated
     }
@@ -55,9 +55,6 @@ class SettingsViewModel(
 
     private val _pendingPointsChange = MutableStateFlow<Int?>(null)
     val pendingPointsChange: StateFlow<Int?> = _pendingPointsChange.asStateFlow()
-
-    private var currentTournament: Tournament? = null
-    private var onTournamentUpdated: (() -> Unit)? = null
 
     // 2. Lav en funktion, så App.kt kan "injecte" handlingen
     fun setOnDeleteTournament(action: () -> Unit) {
@@ -128,7 +125,7 @@ class SettingsViewModel(
                 currentTournament?.name = newName
 
                 // Notificer UI om ændringen
-                onTournamentUpdated?.invoke(newName)
+                onTournamentUpdated?.invoke()
 
                 // Luk dialogen
                 dismissDialog()

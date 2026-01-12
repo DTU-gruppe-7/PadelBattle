@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,10 +67,24 @@ fun TournamentConfigScreen(
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
 
+    // Reset ViewModel when entering the screen fresh (not for duplication)
+    LaunchedEffect(duplicateFromId) {
+        if (duplicateFromId == null) {
+            viewModel.reset()
+        }
+    }
+
     // Load tournament data for duplication if duplicateFromId is provided
     LaunchedEffect(duplicateFromId) {
         duplicateFromId?.let { tournamentId ->
             viewModel.loadTournamentForDuplication(tournamentId)
+        }
+    }
+
+    // Reset ViewModel when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.reset()
         }
     }
 

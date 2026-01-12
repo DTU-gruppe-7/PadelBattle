@@ -15,6 +15,7 @@ import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
+import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
@@ -29,7 +30,9 @@ fun NavigationGraph(
     standingsViewModel: StandingsViewModel,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
+    settingsViewModel: SettingsViewModel,
     selectedTab: Int = 0,
+    onTabSelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -50,6 +53,15 @@ fun NavigationGraph(
                         tournamentViewModel.setTournament(tournament)
                         navController.navigate(TournamentView(tournamentName = tournament.name))
                     }
+                },
+                onDuplicateTournament = { tournamentType, tournamentId ->
+                    // Navigate to TournamentConfig with duplication parameters
+                    navController.navigate(
+                        TournamentConfig(
+                            tournamentType = tournamentType,
+                            duplicateFromId = tournamentId
+                        )
+                    )
                 }
             )
         }
@@ -59,7 +71,7 @@ fun NavigationGraph(
                 viewModel = chooseTournamentViewModel,
                 onNavigateToPlayers = {
                     val typeName = chooseTournamentViewModel.selectedTournamentType.value?.name ?: "AMERICANO"
-                    navController.navigate(TournamentConfig(tournamentType = typeName))
+                    navController.navigate(TournamentConfig(tournamentType = typeName, duplicateFromId = null))
                 }
             )
         }
@@ -74,6 +86,7 @@ fun NavigationGraph(
             TournamentConfigScreen(
                 tournamentType = tournamentType,
                 viewModel = tournamentConfigViewModel,
+                duplicateFromId = config.duplicateFromId,
                 onTournamentCreated = { tournament ->
                     // Gem turneringen i viewmodel
                     tournamentViewModel.setTournament(tournament)
@@ -87,6 +100,7 @@ fun NavigationGraph(
                     tournamentConfigViewModel.reset()
                 },
                 onGoBack = {
+                    tournamentConfigViewModel.reset()
                     navController.popBackStack()
                 }
             )
@@ -98,7 +112,9 @@ fun NavigationGraph(
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
+                settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
+                onTabSelected = onTabSelected,
                 onGoBack = {
                     navController.popBackStack()
                 }

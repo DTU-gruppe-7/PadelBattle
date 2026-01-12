@@ -19,8 +19,10 @@ import dk.dtu.padelbattle.data.PadelBattleDatabase
 import dk.dtu.padelbattle.view.navigation.BottomNavigationBar
 import dk.dtu.padelbattle.view.navigation.NavigationGraph
 import dk.dtu.padelbattle.view.navigation.TopBar
+import dk.dtu.padelbattle.view.navigation.TournamentConfig
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
+import dk.dtu.padelbattle.view.TextInputDialog
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
@@ -29,6 +31,7 @@ import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import dk.dtu.padelbattle.viewmodel.SettingsViewModel
+import dk.dtu.padelbattle.viewmodel.SettingsDialogType
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -57,15 +60,18 @@ fun App(
     val matchEditViewModel: MatchEditViewModel = viewModel {
         MatchEditViewModel(
             database.matchDao(),
-            database.playerDao()
+            database.playerDao(),
+            database.tournamentDao()
         )
     }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
-    val settingsViewModel: SettingsViewModel = viewModel { SettingsViewModel() }
+    val settingsViewModel: SettingsViewModel = viewModel {
+        SettingsViewModel(database.tournamentDao())
+    }
 
     MaterialTheme {
         val navController = rememberNavController()
-        LaunchedEffect(navController) {
+        LaunchedEffect(Unit) {
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -79,16 +85,68 @@ fun App(
         val currentScreen = getCurrentScreen(backStackEntry)
         var selectedTab by remember { mutableStateOf(0) }
 
+        // Callback til at opdatere selectedTab (bruges af både BottomNavigationBar og TournamentViewScreen)
+        val onTabSelected: (Int) -> Unit = { selectedTab = it }
+
         // Reset selectedTab when navigating away from TournamentView
         LaunchedEffect(currentScreen) {
             if (currentScreen !is TournamentView) {
                 selectedTab = 0
             }
+            // Reset tournamentConfigViewModel when navigating away from TournamentConfig
+            if (currentScreen !is TournamentConfig) {
+                tournamentConfigViewModel.reset()
+            }
         }
 
-        // Opdater settings menu items baseret på current screen
-        settingsViewModel.updateScreen(currentScreen)
+        // Hent turnering og opdater settings menu items baseret på current screen
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
+        val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
+        val currentTournament by tournamentViewModel.tournament.collectAsState()
+        settingsViewModel.updateScreen(
+            screen = currentScreen,
+            tournament = currentTournament,
+            onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
+        )
+
+        // Opdater SettingsViewModel med den aktuelle turnering
+        LaunchedEffect(currentTournament) {
+            settingsViewModel.setCurrentTournament(currentTournament) {
+                // Notificer TournamentViewModel om ændringen
+                tournamentViewModel.notifyTournamentUpdated()
+            }
+        }
+
+        // Håndter navigation når turneringens navn ændres
+        LaunchedEffect(currentTournament?.name) {
+            currentTournament?.let { tournament ->
+                // Naviger til TournamentView med det nye navn for at opdatere topbaren
+                if (currentScreen is TournamentView && currentScreen.tournamentName != tournament.name) {
+                    navController.navigate(TournamentView(tournamentName = tournament.name)) {
+                        popUpTo(TournamentView::class) { inclusive = true }
+                    }
+                }
+            }
+        }
+
+        // Vis dialog baseret på currentDialogType
+        when (val dialogType = currentDialogType) {
+            is SettingsDialogType.EditTournamentName -> {
+                TextInputDialog(
+                    title = "Ændr turneringsnavn",
+                    label = "Turneringsnavn",
+                    currentValue = dialogType.currentName,
+                    onConfirm = { newName ->
+                        settingsViewModel.updateTournamentName(dialogType.tournamentId, newName)
+                    },
+                    onDismiss = { settingsViewModel.dismissDialog() },
+                    validateInput = { name ->
+                        if (name.isBlank()) "Navn må ikke være tomt" else null
+                    }
+                )
+            }
+            null -> { /* Ingen dialog */ }
+        }
 
         Scaffold(
             topBar = {
@@ -106,7 +164,7 @@ fun App(
                 if (currentScreen is TournamentView) {
                     BottomNavigationBar(
                         selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it }
+                        onTabSelected = onTabSelected
                     )
                 }
             }
@@ -120,7 +178,9 @@ fun App(
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
+                settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
+                onTabSelected = onTabSelected,
                 modifier = Modifier.padding(contentPadding)
             )
         }

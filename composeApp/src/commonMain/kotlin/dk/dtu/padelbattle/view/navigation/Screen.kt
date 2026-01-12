@@ -22,7 +22,10 @@ object ChooseTournament: Screen {
 }
 
 @Serializable
-data class TournamentConfig(val tournamentType: String): Screen {
+data class TournamentConfig(
+    val tournamentType: String,
+    val duplicateFromId: String? = null
+): Screen {
     override val title = "Opsæt Turnering"
 }
 

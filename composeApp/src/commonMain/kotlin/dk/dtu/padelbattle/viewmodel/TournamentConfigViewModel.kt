@@ -12,8 +12,6 @@ import dk.dtu.padelbattle.model.TournamentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlin.math.max
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -41,20 +39,12 @@ class TournamentConfigViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    //husk at spørg de andre om det skal ligge nede i modellen istedet
-    private val _pointsToWin = MutableStateFlow(32)
-
     fun updateTournamentName(name: String) {
         _tournamentName.value = name
     }
 
     fun updateCurrentPlayerName(name: String) {
         _currentPlayerName.value = name
-    }
-
-    // Metode til UI'en der gør at vi kan ændre antal baner der skal bruges
-    fun setNumberOfCourts(count: Int) {
-        val maxCourts = calculateMaxCourts(_playerNames.value.size)
     }
     
     fun updateNumberOfCourts(courts: Int) {
@@ -117,7 +107,7 @@ class TournamentConfigViewModel(
                     name = _tournamentName.value,
                     type = tournamentType,
                     dateCreated = Clock.System.now().toEpochMilliseconds(),
-                    numberOfCourts = (players.size / 4).coerceIn(1, 4),
+                    numberOfCourts = _numberOfCourts.value,
                     pointsPerMatch = _pointsPerMatch.value,
                     players = players
                 )
@@ -146,11 +136,40 @@ class TournamentConfigViewModel(
     }
 
     fun reset() {
-        _tournamentName.value = "Tournement"
+        _tournamentName.value = "Turnering"
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
         _numberOfCourts.value = 1
         _pointsPerMatch.value = 16
         _error.value = null
+    }
+
+    /**
+     * Populerer konfigurationsfelterne med data fra en eksisterende turnering.
+     * Bruges til at duplikere en turnering.
+     *
+     * @param tournamentId ID'et på turneringen der skal duplikeres
+     */
+    fun loadTournamentForDuplication(tournamentId: String) {
+        viewModelScope.launch {
+            try {
+                // Hent turneringen fra databasen
+                val tournamentEntity = tournamentDao.getTournamentById(tournamentId)
+                if (tournamentEntity != null) {
+                    // Hent spillere for turneringen
+                    val playersInTournament = playerDao.getPlayersForTournament(tournamentId)
+
+                    // Populer felterne med turneringens data
+                    _tournamentName.value = "${tournamentEntity.name} (Kopi)"
+                    _playerNames.value = playersInTournament.map { it.name }
+                    _numberOfCourts.value = tournamentEntity.numberOfCourts
+                    _pointsPerMatch.value = tournamentEntity.pointsPerMatch
+                    _currentPlayerName.value = ""
+                    _error.value = null
+                }
+            } catch (e: Exception) {
+                _error.value = "Kunne ikke indlæse turnering: ${e.message}"
+            }
+        }
     }
 }

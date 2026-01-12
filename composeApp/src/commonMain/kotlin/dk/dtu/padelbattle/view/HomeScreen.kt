@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,12 +26,14 @@ import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import dk.dtu.padelbattle.model.utils.formatDate
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onGoToTournamentScreen: () -> Unit,
-    onTournamentClicked: (String) -> Unit
+    onTournamentClicked: (String) -> Unit,
+    onDuplicateTournament: ((String, String) -> Unit)? = null // (tournamentType, tournamentId) -> Unit
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -139,6 +142,10 @@ fun HomeScreen(
                         TournamentItemCard(
                             tournament = currentTournaments[index],
                             onClick = { onTournamentClicked(currentTournaments[index].id) },
+                      
+                            onDuplicate = { tournament ->
+                                onDuplicateTournament?.invoke(tournament.type.name, tournament.id)
+                            },
                             onDelete = { tournament -> viewModel.showDeleteConfirmationDialog(tournament) }
                         )
                     }
@@ -153,27 +160,41 @@ fun HomeScreen(
 fun TournamentItemCard(
     tournament: Tournament,
     onClick: () -> Unit,
-    onDuplicate: ((Tournament) -> Unit)? = null, // TODO: Implementer duplikerings-funktionalitet
+    onDuplicate: ((Tournament) -> Unit),
     onDelete: ((Tournament) -> Unit)? = null
 ) {
+    // Track whether we've already triggered duplicate to prevent re-triggering
+    var hasDuplicated by remember { mutableStateOf(false) }
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    // Swipe til højre -> Vis bekræftelsesdialog
-                    onDelete?.invoke(tournament)
-                    false  // Forhindre dismiss - dialogen håndterer sletning
+                    // Swipe til højre -> Dupliker turnering
+                    // Only trigger if we haven't already duplicated
+                    if (!hasDuplicated) {
+                        hasDuplicated = true
+                        onDuplicate.invoke(tournament)
+                    }
+                    false // Return false to prevent dismissal and reset state
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
-                    // Swipe til venstre -> Dupliker turnering (TODO)
-                    // onDuplicate?.invoke(tournament)
-                    false  // Forhindre dismiss indtil implementeret
+                    // Swipe til venstre -> Slet turnering
+                    onDelete?.invoke(tournament)
+                    false // Return false to prevent dismissal and reset state
                 }
                 else -> false
             }
         },
         positionalThreshold = { it * 0.25f }
     )
+
+    // Reset hasDuplicated flag when dismissState settles back
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
+            hasDuplicated = false
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
@@ -218,6 +239,11 @@ fun TournamentItemCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ) 
                         if (tournament.isCompleted) {
                             Text(
                                 text = "Afsluttet",
@@ -261,14 +287,14 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
     }
 
     val color = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.errorContainer
-        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
+        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
         SwipeToDismissBoxValue.Settled -> Color.Transparent
     }
 
     val icon = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-        SwipeToDismissBoxValue.EndToStart -> Icons.Default.ContentCopy
+        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.ContentCopy
+        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
         SwipeToDismissBoxValue.Settled -> null
     }
 
@@ -292,8 +318,8 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
                 imageVector = it,
                 contentDescription = null,
                 tint = when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onErrorContainer
-                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onPrimaryContainer
+                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimaryContainer
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onErrorContainer
                     else -> Color.Transparent
                 },
                 modifier = Modifier
@@ -304,6 +330,3 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
     }
 }
 
-fun formatDate(timestamp: Long): String {
-    return "ID: ${timestamp.toString().takeLast(4)}"
-}

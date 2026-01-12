@@ -41,7 +41,8 @@ fun MatchListScreen(
     currentTournament: Tournament,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
-    onMatchUpdated: () -> Unit
+    onMatchUpdated: () -> Unit,
+    onTournamentCompleted: () -> Unit = {}
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedMatchIndex by remember { mutableStateOf(0) }
@@ -52,9 +53,9 @@ fun MatchListScreen(
     // Track revision for recomposition when matches are updated in-place
     val revision by matchListViewModel.revision.collectAsState()
 
-    // Opdater viewModel når matches ændres
+    // Opdater viewModel når matches ændres - brug updateMatches for at bevare nuværende runde
     LaunchedEffect(matches) {
-        matchListViewModel.setMatches(matches)
+        matchListViewModel.updateMatches(matches)
     }
 
     // Beregn antallet af runder
@@ -157,7 +158,8 @@ fun MatchListScreen(
                 matchListViewModel.notifyMatchUpdated()
                 onMatchUpdated()
             },
-            onDismiss = { showEditDialog = false }
+            onDismiss = { showEditDialog = false },
+            onTournamentCompleted = onTournamentCompleted
         )
     }
 }

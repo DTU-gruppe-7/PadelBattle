@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,7 +54,8 @@ fun TournamentConfigScreen(
     tournamentType: TournamentType,
     viewModel: TournamentConfigViewModel,
     onTournamentCreated: (Tournament) -> Unit,
-    onGoBack: () -> Unit
+    onGoBack: () -> Unit,
+    duplicateFromId: String? = null
 ) {
     val tournamentName by viewModel.tournamentName.collectAsState()
     val playerNames by viewModel.playerNames.collectAsState()
@@ -64,6 +66,14 @@ fun TournamentConfigScreen(
 
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
+
+    // Load tournament data for duplication if duplicateFromId is provided
+    // Only runs once when duplicateFromId changes (including initial composition)
+    LaunchedEffect(duplicateFromId) {
+        if (duplicateFromId != null) {
+            viewModel.loadTournamentForDuplication(duplicateFromId)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -273,11 +283,8 @@ fun TournamentConfigScreen(
 
         // Points Dialog
         if (showPointsDialog) {
-            NumberPickerDialog(
-                title = "Point pr. Runde",
+            PointsPickerDialog(
                 currentValue = pointsPerRound,
-                minValue = 1,
-                maxValue = 32,
                 onValueChange = { viewModel.updatePointsPerMatch(it) },
                 onDismiss = { showPointsDialog = false }
             )
@@ -476,3 +483,88 @@ private fun ScrollWheelPickerPopup(
         }
     }
 }
+
+@Composable
+fun PointsPickerDialog(
+    currentValue: Int,
+    onValueChange: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val availablePoints = listOf(16, 21, 24, 31, 32)
+    val listState = rememberLazyListState()
+
+    // Find the index of the current value, default to first option if not in list
+    val currentIndex = availablePoints.indexOf(currentValue).takeIf { it >= 0 } ?: 0
+
+    // Scroll to current value when dialog opens
+    LaunchedEffect(Unit) {
+        listState.scrollToItem(currentIndex)
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Point pr. Runde",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(availablePoints.size) { index ->
+                            val value = availablePoints[index]
+                            Text(
+                                text = value.toString(),
+                                style = if (value == currentValue) {
+                                    MaterialTheme.typography.displayMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                } else {
+                                    MaterialTheme.typography.headlineLarge
+                                },
+                                color = if (value == currentValue) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                },
+                                modifier = Modifier
+                                    .padding(vertical = 12.dp)
+                                    .clickable {
+                                        onValueChange(value)
+                                        onDismiss()
+                                    }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextButton(onClick = onDismiss) {
+                    Text("Luk")
+                }
+            }
+        }
+    }
+}
+

@@ -17,6 +17,9 @@ interface PlayerDao {
     @Query("SELECT * FROM players WHERE tournamentId = :tournamentId ORDER BY totalPoints DESC")
     suspend fun getPlayersByTournamentOnce(tournamentId: String): List<PlayerEntity>
 
+    @Query("SELECT * FROM players WHERE tournamentId = :tournamentId ORDER BY name ASC")
+    suspend fun getPlayersForTournament(tournamentId: String): List<PlayerEntity>
+
     @Query("SELECT * FROM players WHERE id = :id")
     suspend fun getPlayerById(id: String): PlayerEntity?
 

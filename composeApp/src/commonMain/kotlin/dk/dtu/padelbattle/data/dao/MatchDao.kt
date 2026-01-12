@@ -31,4 +31,7 @@ interface MatchDao {
 
     @Query("UPDATE matches SET scoreTeam1 = :score1, scoreTeam2 = :score2, isPlayed = 1 WHERE id = :matchId")
     suspend fun updateMatchScore(matchId: String, score1: Int, score2: Int)
+
+    @Query("SELECT COUNT(*) FROM matches WHERE tournamentId = :tournamentId AND isPlayed = 0")
+    suspend fun countUnplayedMatches(tournamentId: String): Int
 }

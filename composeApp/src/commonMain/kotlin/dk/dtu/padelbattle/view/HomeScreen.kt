@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -122,8 +123,7 @@ fun HomeScreen(
                             tournament = currentTournaments[index],
                             onClick = { onTournamentClicked(currentTournaments[index].id) },
                             onDuplicate = { tournament ->
-                                val (tournamentType, tournamentId) = viewModel.getDuplicationNavigationData(tournament)
-                                onDuplicateTournament?.invoke(tournamentType, tournamentId)
+                                onDuplicateTournament?.invoke(tournament.type.name, tournament.id)
                             },
                             onDelete = { tournament ->
                                 // TODO: Implementer sletning
@@ -142,15 +142,22 @@ fun HomeScreen(
 fun TournamentItemCard(
     tournament: Tournament,
     onClick: () -> Unit,
-    onDuplicate: ((Tournament) -> Unit)? = null,
+    onDuplicate: ((Tournament) -> Unit),
     onDelete: ((Tournament) -> Unit)? = null // TODO: Implementer sletnings-funktionalitet
 ) {
+    // Track whether we've already triggered duplicate to prevent re-triggering
+    var hasDuplicated by remember { mutableStateOf(false) }
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     // Swipe til højre -> Dupliker turnering
-                    onDuplicate?.invoke(tournament)
+                    // Only trigger if we haven't already duplicated
+                    if (!hasDuplicated) {
+                        hasDuplicated = true
+                        onDuplicate.invoke(tournament)
+                    }
                     false // Return false to prevent dismissal and reset state
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
@@ -163,6 +170,13 @@ fun TournamentItemCard(
         },
         positionalThreshold = { it * 0.25f }
     )
+
+    // Reset hasDuplicated flag when dismissState settles back
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
+            hasDuplicated = false
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,

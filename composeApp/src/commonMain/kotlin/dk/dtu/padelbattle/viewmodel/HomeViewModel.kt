@@ -27,16 +27,6 @@ class HomeViewModel(
         )
 
     /**
-     * Returnerer navigation data til duplikering af en turnering.
-     *
-     * @param tournament Turneringen der skal duplikeres
-     * @return Pair af (tournamentType, tournamentId) der kan bruges til navigation
-     */
-    fun getDuplicationNavigationData(tournament: Tournament): Pair<String, String> {
-        return Pair(tournament.type.name, tournament.id)
-    }
-
-    /**
      * Sletter en turnering fra databasen.
      * TODO: Implementer denne metode når slet-funktionaliteten skal laves
      *

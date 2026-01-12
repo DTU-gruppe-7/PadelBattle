@@ -19,6 +19,7 @@ import dk.dtu.padelbattle.data.PadelBattleDatabase
 import dk.dtu.padelbattle.view.navigation.BottomNavigationBar
 import dk.dtu.padelbattle.view.navigation.NavigationGraph
 import dk.dtu.padelbattle.view.navigation.TopBar
+import dk.dtu.padelbattle.view.navigation.TournamentConfig
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
 import dk.dtu.padelbattle.view.TextInputDialog
@@ -70,7 +71,7 @@ fun App(
 
     MaterialTheme {
         val navController = rememberNavController()
-        LaunchedEffect(navController) {
+        LaunchedEffect(Unit) {
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -84,10 +85,17 @@ fun App(
         val currentScreen = getCurrentScreen(backStackEntry)
         var selectedTab by remember { mutableStateOf(0) }
 
+        // Callback til at opdatere selectedTab (bruges af både BottomNavigationBar og TournamentViewScreen)
+        val onTabSelected: (Int) -> Unit = { selectedTab = it }
+
         // Reset selectedTab when navigating away from TournamentView
         LaunchedEffect(currentScreen) {
             if (currentScreen !is TournamentView) {
                 selectedTab = 0
+            }
+            // Reset tournamentConfigViewModel when navigating away from TournamentConfig
+            if (currentScreen !is TournamentConfig) {
+                tournamentConfigViewModel.reset()
             }
         }
 
@@ -105,9 +113,15 @@ fun App(
         LaunchedEffect(currentTournament) {
             settingsViewModel.setCurrentTournament(currentTournament) {
                 // Notificer TournamentViewModel om ændringen
-                currentTournament?.let { tournament ->
-                    tournamentViewModel.notifyTournamentUpdated()
-                    // Naviger til TournamentView med det nye navn for at opdatere topbaren
+                tournamentViewModel.notifyTournamentUpdated()
+            }
+        }
+
+        // Håndter navigation når turneringens navn ændres
+        LaunchedEffect(currentTournament?.name) {
+            currentTournament?.let { tournament ->
+                // Naviger til TournamentView med det nye navn for at opdatere topbaren
+                if (currentScreen is TournamentView && currentScreen.tournamentName != tournament.name) {
                     navController.navigate(TournamentView(tournamentName = tournament.name)) {
                         popUpTo(TournamentView::class) { inclusive = true }
                     }
@@ -149,7 +163,7 @@ fun App(
                 if (currentScreen is TournamentView) {
                     BottomNavigationBar(
                         selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it }
+                        onTabSelected = onTabSelected
                     )
                 }
             }
@@ -165,7 +179,7 @@ fun App(
                 matchListViewModel = matchListViewModel,
                 settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
+                onTabSelected = onTabSelected,
                 modifier = Modifier.padding(contentPadding)
             )
         }

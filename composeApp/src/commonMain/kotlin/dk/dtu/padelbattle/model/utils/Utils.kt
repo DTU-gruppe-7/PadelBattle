@@ -6,3 +6,5 @@ fun generateId(): String {
         .map { chars.random() }
         .joinToString("")
 }
+
+expect fun formatDate(timestamp: Long): String

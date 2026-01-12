@@ -29,6 +29,7 @@ fun NavigationGraph(
     standingsViewModel: StandingsViewModel,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
+    selectedTab: Int = 0,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -97,6 +98,7 @@ fun NavigationGraph(
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
+                selectedTab = selectedTab,
                 onGoBack = {
                     navController.popBackStack()
                 }

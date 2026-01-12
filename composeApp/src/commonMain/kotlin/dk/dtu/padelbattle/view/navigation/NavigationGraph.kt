@@ -51,6 +51,15 @@ fun NavigationGraph(
                         tournamentViewModel.setTournament(tournament)
                         navController.navigate(TournamentView(tournamentName = tournament.name))
                     }
+                },
+                onDuplicateTournament = { tournamentType, tournamentId ->
+                    // Navigate to TournamentConfig with duplication parameters
+                    navController.navigate(
+                        TournamentConfig(
+                            tournamentType = tournamentType,
+                            duplicateFromId = tournamentId
+                        )
+                    )
                 }
             )
         }
@@ -60,7 +69,7 @@ fun NavigationGraph(
                 viewModel = chooseTournamentViewModel,
                 onNavigateToPlayers = {
                     val typeName = chooseTournamentViewModel.selectedTournamentType.value?.name ?: "AMERICANO"
-                    navController.navigate(TournamentConfig(tournamentType = typeName))
+                    navController.navigate(TournamentConfig(tournamentType = typeName, duplicateFromId = null))
                 }
             )
         }
@@ -75,6 +84,7 @@ fun NavigationGraph(
             TournamentConfigScreen(
                 tournamentType = tournamentType,
                 viewModel = tournamentConfigViewModel,
+                duplicateFromId = config.duplicateFromId,
                 onTournamentCreated = { tournament ->
                     // Gem turneringen i viewmodel
                     tournamentViewModel.setTournament(tournament)

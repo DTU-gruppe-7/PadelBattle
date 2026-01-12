@@ -30,7 +30,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 fun HomeScreen(
     viewModel: HomeViewModel,
     onGoToTournamentScreen: () -> Unit,
-    onTournamentClicked: (String) -> Unit
+    onTournamentClicked: (String) -> Unit,
+    onDuplicateTournament: ((String, String) -> Unit)? = null // (tournamentType, tournamentId) -> Unit
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -119,10 +120,14 @@ fun HomeScreen(
                         TournamentItemCard(
                             tournament = currentTournaments[index],
                             onClick = { onTournamentClicked(currentTournaments[index].id) },
-                            // TODO: Tilføj onDuplicate handler her når funktionaliteten implementeres
-                            // onDuplicate = { tournament -> viewModel.duplicateTournament(tournament) },
-                            // TODO: Tilføj onDelete handler her når funktionaliteten implementeres
-                            // onDelete = { tournament -> viewModel.deleteTournament(tournament) }
+                            onDuplicate = { tournament ->
+                                val (tournamentType, tournamentId) = viewModel.getDuplicationNavigationData(tournament)
+                                onDuplicateTournament?.invoke(tournamentType, tournamentId)
+                            },
+                            onDelete = { tournament ->
+                                // TODO: Implementer sletning
+                                viewModel.deleteTournament(tournament)
+                            }
                         )
                     }
                 }
@@ -141,19 +146,19 @@ fun TournamentItemCard(
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
-            // TODO: Håndter swipe-handlinger her
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     // Swipe til højre -> Dupliker turnering
-                    // TODO: Kald onDuplicate?.invoke(tournament) når funktionaliteten er klar
+                    onDuplicate?.invoke(tournament)
+                    false // Return false to prevent dismissal and reset state
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
                     // Swipe til venstre -> Slet turnering
-                    // TODO: Kald onDelete?.invoke(tournament) når funktionaliteten er klar
+                    onDelete?.invoke(tournament)
+                    false // Return false to prevent dismissal and reset state
                 }
-                else -> {}
+                else -> false
             }
-            false // Returnér false for at forhindre faktisk fjernelse af kortet
         },
         positionalThreshold = { it * 0.25f }
     )
@@ -249,14 +254,14 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
     }
 
     val color = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.errorContainer
-        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
+        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
         SwipeToDismissBoxValue.Settled -> Color.Transparent
     }
 
     val icon = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-        SwipeToDismissBoxValue.EndToStart -> Icons.Default.ContentCopy
+        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.ContentCopy
+        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
         SwipeToDismissBoxValue.Settled -> null
     }
 
@@ -280,8 +285,8 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
                 imageVector = it,
                 contentDescription = null,
                 tint = when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onErrorContainer
-                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onPrimaryContainer
+                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimaryContainer
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onErrorContainer
                     else -> Color.Transparent
                 },
                 modifier = Modifier

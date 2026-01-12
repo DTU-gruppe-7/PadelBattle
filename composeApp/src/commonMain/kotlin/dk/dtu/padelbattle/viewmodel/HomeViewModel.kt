@@ -10,6 +10,7 @@ import dk.dtu.padelbattle.model.Tournament
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val tournamentDao: TournamentDao,
@@ -24,4 +25,29 @@ class HomeViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    /**
+     * Returnerer navigation data til duplikering af en turnering.
+     *
+     * @param tournament Turneringen der skal duplikeres
+     * @return Pair af (tournamentType, tournamentId) der kan bruges til navigation
+     */
+    fun getDuplicationNavigationData(tournament: Tournament): Pair<String, String> {
+        return Pair(tournament.type.name, tournament.id)
+    }
+
+    /**
+     * Sletter en turnering fra databasen.
+     * TODO: Implementer denne metode når slet-funktionaliteten skal laves
+     *
+     * @param tournament Turneringen der skal slettes
+     */
+    fun deleteTournament(tournament: Tournament) {//TODO: DELETE WHEN MERGED
+        viewModelScope.launch {
+            // TODO: Implementer sletning af turnering
+            // tournamentDao.deleteTournamentById(tournament.id)
+            // playerDao.deletePlayersByTournament(tournament.id)
+            // matchDao.deleteMatchesByTournament(tournament.id)
+        }
+    }
 }

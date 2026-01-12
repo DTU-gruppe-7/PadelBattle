@@ -13,6 +13,7 @@ import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
+import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 
 @Composable
 fun TournamentViewScreen(
@@ -20,6 +21,7 @@ fun TournamentViewScreen(
     standingsViewModel: StandingsViewModel,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
+    settingsViewModel: SettingsViewModel,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
     onGoBack: () -> Unit
@@ -72,5 +74,26 @@ fun TournamentViewScreen(
                 )
             }
         }
+    }
+
+    // Settings dialogs
+    val showPointsDialog by settingsViewModel.showPointsDialog.collectAsState()
+    val showWarningDialog by settingsViewModel.showWarningDialog.collectAsState()
+    val pendingPointsChange by settingsViewModel.pendingPointsChange.collectAsState()
+
+    if (showPointsDialog) {
+        PointsPickerDialog(
+            currentValue = tournament?.pointsPerMatch ?: 16,
+            onValueChange = { settingsViewModel.onPointsSelected(it) },
+            onDismiss = { settingsViewModel.dismissPointsDialog() }
+        )
+    }
+
+    if (showWarningDialog && pendingPointsChange != null) {
+        PointsChangeWarningDialog(
+            newPoints = pendingPointsChange!!,
+            onConfirm = { settingsViewModel.confirmPointsChange() },
+            onCancel = { settingsViewModel.cancelPointsChange() }
+        )
     }
 }

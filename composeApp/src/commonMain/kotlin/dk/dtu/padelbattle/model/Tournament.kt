@@ -26,6 +26,16 @@ class Tournament(
 
     fun getMaxCourts(): Int = (players.size / 4).coerceAtLeast(1)
 
+    /**
+     * Tjekker om der er nogle kampe der allerede er blevet spillet.
+     * Returnerer true hvis mindst én kamp har isPlayed = true
+     */
+    fun hasPlayedMatches(): Boolean = matches.any { it.isPlayed }
+
+    /**
+     * Returnerer det faktiske antal baner der vil blive brugt.
+     * Dette er minimum af numberOfCourts og getMaxCourts()
+     */
     fun getEffectiveCourts(): Int = numberOfCourts.coerceIn(1, getMaxCourts())
 
     fun startTournament(): Boolean {

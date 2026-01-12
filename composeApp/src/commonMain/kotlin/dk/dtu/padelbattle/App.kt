@@ -4,7 +4,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,6 +64,14 @@ fun App(
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
+        var selectedTab by remember { mutableStateOf(0) }
+
+        // Reset selectedTab when navigating away from TournamentView
+        LaunchedEffect(currentScreen) {
+            if (currentScreen !is TournamentView) {
+                selectedTab = 0
+            }
+        }
 
         Scaffold(
             topBar = {
@@ -73,19 +85,23 @@ fun App(
             bottomBar = {
                 // Vis kun bottom bar på TournamentView skærmen
                 if (currentScreen is TournamentView) {
-                    BottomNavigationBar()
+                    BottomNavigationBar(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
+                    )
                 }
             }
         ) { contentPadding ->
             NavigationGraph(
                 navController = navController,
+                homeViewModel = homeViewModel,
                 chooseTournamentViewModel = chooseTournamentViewModel,
                 tournamentConfigViewModel = tournamentConfigViewModel,
                 tournamentViewModel = tournamentViewModel,
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
-                homeViewModel = homeViewModel,
+                selectedTab = selectedTab,
                 modifier = Modifier.padding(contentPadding)
             )
         }

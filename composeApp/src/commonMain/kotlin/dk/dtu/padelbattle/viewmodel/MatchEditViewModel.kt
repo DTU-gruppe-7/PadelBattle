@@ -46,8 +46,8 @@ class MatchEditViewModel(
             _scoreTeam2.value = match.scoreTeam2
         } else {
             // Standardværdier for nye kampe
-            _scoreTeam1.value = pointsPerMatch / 2
-            _scoreTeam2.value = pointsPerMatch / 2
+            _scoreTeam1.value = (pointsPerMatch / 2)
+            _scoreTeam2.value = (pointsPerMatch / 2)
         }
     }
 

@@ -52,7 +52,7 @@ fun App(
             database.matchDao()
         )
     }
-    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel() }
+    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel(database.tournamentDao()) }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
     val matchEditViewModel: MatchEditViewModel = viewModel {
         MatchEditViewModel(
@@ -65,6 +65,16 @@ fun App(
 
     MaterialTheme {
         val navController = rememberNavController()
+        LaunchedEffect(navController) {
+            settingsViewModel.setOnDeleteTournament {
+                tournamentViewModel.deleteTournament(
+                    onSuccess = {
+                        // Naviger tilbage til start, når sletningen er færdig
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
         var selectedTab by remember { mutableStateOf(0) }

@@ -25,6 +25,7 @@ import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import dk.dtu.padelbattle.model.utils.formatDate
 
 @Composable
 fun HomeScreen(
@@ -292,6 +293,3 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
     }
 }
 
-fun formatDate(timestamp: Long): String {
-    return "ID: ${timestamp.toString().takeLast(4)}"
-}

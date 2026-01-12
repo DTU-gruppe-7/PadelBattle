@@ -154,7 +154,8 @@ fun App(
                     currentScreen = currentScreen,
                     canNavigateBack = navController.previousBackStackEntry != null,
                     navigateUp = { navController.navigateUp() },
-                    settingsMenuItems = settingsMenuItems
+                    settingsMenuItems = settingsMenuItems,
+                    settingsViewModel = settingsViewModel
                 )
             },
             containerColor = Color.LightGray,

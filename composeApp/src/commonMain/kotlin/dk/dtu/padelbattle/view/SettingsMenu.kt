@@ -3,18 +3,22 @@ package dk.dtu.padelbattle.view
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 
 /**
  * Data class to represent a settings menu item
@@ -34,13 +38,15 @@ data class SettingsMenuItem(
 @Composable
 fun SettingsMenu(
     menuItems: List<SettingsMenuItem>,
+    viewModel: SettingsViewModel,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val showDeleteConfirmation by viewModel.deleteConfirmation.showDeleteConfirmation.collectAsState()
 
     Box(modifier = modifier) {
         IconButton(
-            onClick = { expanded = true }
+                onClick = { expanded = true }
         ) {
             Icon(
                 imageVector = Icons.Default.Settings,
@@ -68,6 +74,24 @@ fun SettingsMenu(
                 )
             }
         }
+
+        // Show delete confirmation dialog separately (not as a parameter to IconButton)
+        if (showDeleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = { viewModel.deleteConfirmation.dismiss() },
+                title = { Text("Slet turnering") },
+                text = { Text("Er du sikker på, at du vil slette denne turnering?") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.deleteConfirmation.confirm() }) {
+                        Text("Slet", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) {
+                        Text("Annuller")
+                    }
+                }
+            )
+        }
     }
 }
-

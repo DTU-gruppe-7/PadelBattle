@@ -37,9 +37,29 @@ fun HomeScreen(
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
+    val showDeleteConfirmation by viewModel.deleteConfirmation.showDeleteConfirmation.collectAsState()
 
     val activeTournaments = tournaments.filter { !it.isCompleted }
     val completedTournaments = tournaments.filter { it.isCompleted }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.deleteConfirmation.dismiss() },
+            title = { Text("Slet turnering") },
+            text = { Text("Er du sikker på, at du vil slette denne turnering? Denne handling kan ikke fortrydes.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteConfirmation.confirm() }) {
+                    Text("Slet", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) {
+                    Text("Annuller")
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -122,13 +142,11 @@ fun HomeScreen(
                         TournamentItemCard(
                             tournament = currentTournaments[index],
                             onClick = { onTournamentClicked(currentTournaments[index].id) },
+                      
                             onDuplicate = { tournament ->
                                 onDuplicateTournament?.invoke(tournament.type.name, tournament.id)
                             },
-                            onDelete = { tournament ->
-                                // TODO: Implementer sletning
-                                viewModel.deleteTournament(tournament)
-                            }
+                            onDelete = { tournament -> viewModel.showDeleteConfirmationDialog(tournament) }
                         )
                     }
                 }
@@ -143,7 +161,7 @@ fun TournamentItemCard(
     tournament: Tournament,
     onClick: () -> Unit,
     onDuplicate: ((Tournament) -> Unit),
-    onDelete: ((Tournament) -> Unit)? = null // TODO: Implementer sletnings-funktionalitet
+    onDelete: ((Tournament) -> Unit)? = null
 ) {
     // Track whether we've already triggered duplicate to prevent re-triggering
     var hasDuplicated by remember { mutableStateOf(false) }

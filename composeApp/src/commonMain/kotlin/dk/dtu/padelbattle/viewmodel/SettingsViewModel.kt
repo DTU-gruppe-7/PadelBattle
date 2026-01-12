@@ -1,6 +1,7 @@
 package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
+import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.model.Tournament
@@ -30,6 +31,10 @@ class SettingsViewModel(
 
     private val _menuItems = MutableStateFlow<List<SettingsMenuItem>?>(null)
     val menuItems: StateFlow<List<SettingsMenuItem>?> = _menuItems.asStateFlow()
+
+    // Fælles handler til delete confirmation dialog
+    val deleteConfirmation = DeleteConfirmationHandler()
+
     private var deleteAction: (() -> Unit)? = null
 
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
@@ -100,7 +105,9 @@ class SettingsViewModel(
                 onChangePointsPerMatch()
             },
             SettingsMenuItem("Slet turnering") {
-                deleteAction?.invoke()
+                deleteConfirmation.show {
+                    deleteAction?.invoke()
+                }
             }
         )
     }

@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dk.dtu.padelbattle.view.SettingsMenu
 import dk.dtu.padelbattle.view.SettingsMenuItem
+import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,7 +20,8 @@ fun TopBar(
     canNavigateBack: Boolean,
     navigateUp: () -> Unit,
     modifier: Modifier = Modifier,
-    settingsMenuItems: List<SettingsMenuItem>? = null
+    settingsMenuItems: List<SettingsMenuItem>? = null,
+    settingsViewModel: SettingsViewModel? = null
 ) {
     TopAppBar(
         title = { Text(currentScreen.title) },
@@ -35,8 +37,8 @@ fun TopBar(
             }
         },
         actions = {
-            if (settingsMenuItems != null && settingsMenuItems.isNotEmpty()) {
-                SettingsMenu(menuItems = settingsMenuItems)
+            if (settingsMenuItems != null && settingsMenuItems.isNotEmpty() && settingsViewModel != null) {
+                SettingsMenu(menuItems = settingsMenuItems, viewModel = settingsViewModel)
             }
         }
     )

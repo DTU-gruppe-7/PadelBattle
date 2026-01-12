@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import dk.dtu.padelbattle.view.SettingsMenu
+import dk.dtu.padelbattle.view.SettingsMenuItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -16,7 +18,8 @@ fun TopBar(
     currentScreen: Screen,
     canNavigateBack: Boolean,
     navigateUp: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    settingsMenuItems: List<SettingsMenuItem>? = null
 ) {
     TopAppBar(
         title = { Text(currentScreen.title) },
@@ -29,6 +32,11 @@ fun TopBar(
                         contentDescription = "Back"
                     )
                 }
+            }
+        },
+        actions = {
+            if (settingsMenuItems != null && settingsMenuItems.isNotEmpty()) {
+                SettingsMenu(menuItems = settingsMenuItems)
             }
         }
     )

@@ -1,0 +1,73 @@
+package dk.dtu.padelbattle.view
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+
+/**
+ * Data class to represent a settings menu item
+ * @param label The text to display for this menu option
+ * @param onClick The action to perform when this option is clicked
+ */
+data class SettingsMenuItem(
+    val label: String,
+    val onClick: () -> Unit
+)
+
+/**
+ * A reusable settings menu component with a gear icon button
+ * @param menuItems List of menu items to display when the settings button is clicked
+ * @param modifier Optional modifier for positioning the settings button
+ */
+@Composable
+fun SettingsMenu(
+    menuItems: List<SettingsMenuItem>,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        IconButton(
+            onClick = { expanded = true }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Indstillinger",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            menuItems.forEach { item ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        item.onClick()
+                    }
+                )
+            }
+        }
+    }
+}
+

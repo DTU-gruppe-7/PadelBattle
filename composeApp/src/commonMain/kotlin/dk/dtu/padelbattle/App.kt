@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
+import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -55,18 +57,24 @@ fun App(
         )
     }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
+    val settingsViewModel: SettingsViewModel = viewModel { SettingsViewModel() }
 
     MaterialTheme {
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
 
+        // Opdater settings menu items baseret på current screen
+        settingsViewModel.updateScreen(currentScreen)
+        val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
+
         Scaffold(
             topBar = {
                 TopBar(
                     currentScreen = currentScreen,
                     canNavigateBack = navController.previousBackStackEntry != null,
-                    navigateUp = { navController.navigateUp() }
+                    navigateUp = { navController.navigateUp() },
+                    settingsMenuItems = settingsMenuItems
                 )
             },
             containerColor = Color.LightGray,

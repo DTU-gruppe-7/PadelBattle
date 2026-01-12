@@ -52,9 +52,9 @@ fun MatchListScreen(
     // Track revision for recomposition when matches are updated in-place
     val revision by matchListViewModel.revision.collectAsState()
 
-    // Opdater viewModel når matches ændres
+    // Opdater viewModel når matches ændres - brug updateMatches for at bevare nuværende runde
     LaunchedEffect(matches) {
-        matchListViewModel.setMatches(matches)
+        matchListViewModel.updateMatches(matches)
     }
 
     // Beregn antallet af runder

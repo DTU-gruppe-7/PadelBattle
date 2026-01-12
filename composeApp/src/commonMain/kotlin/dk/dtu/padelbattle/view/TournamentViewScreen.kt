@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -24,6 +25,13 @@ fun TournamentViewScreen(
 ) {
     val tournament by viewModel.tournament.collectAsState()
     val revision by viewModel.revision.collectAsState()
+
+    // Initialiser matchListViewModel når turneringen første gang indlæses
+    LaunchedEffect(tournament?.id) {
+        tournament?.let {
+            matchListViewModel.loadTournament(it.matches)
+        }
+    }
 
     key(revision) {
         Column(

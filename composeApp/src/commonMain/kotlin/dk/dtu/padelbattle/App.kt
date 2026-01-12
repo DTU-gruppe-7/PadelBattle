@@ -76,8 +76,13 @@ fun App(
             }
         }
 
-        // Opdater settings menu items baseret på current screen
-        settingsViewModel.updateScreen(currentScreen)
+        // Hent turnering og opdater settings menu items baseret på current screen
+        val currentTournament by tournamentViewModel.tournament.collectAsState()
+        settingsViewModel.updateScreen(
+            screen = currentScreen,
+            tournament = currentTournament,
+            onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
+        )
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
 
         Scaffold(
@@ -109,6 +114,7 @@ fun App(
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
+                settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
                 modifier = Modifier.padding(contentPadding)
             )

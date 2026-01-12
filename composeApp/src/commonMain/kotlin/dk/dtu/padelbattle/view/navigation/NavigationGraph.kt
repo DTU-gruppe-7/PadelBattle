@@ -15,6 +15,7 @@ import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
+import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
@@ -29,6 +30,7 @@ fun NavigationGraph(
     standingsViewModel: StandingsViewModel,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
+    settingsViewModel: SettingsViewModel,
     selectedTab: Int = 0,
     modifier: Modifier = Modifier
 ) {
@@ -98,6 +100,7 @@ fun NavigationGraph(
                 standingsViewModel = standingsViewModel,
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
+                settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
                 onGoBack = {
                     navController.popBackStack()

@@ -1,6 +1,7 @@
 package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
+import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.view.SettingsMenuItem
 import dk.dtu.padelbattle.view.navigation.Screen
 import dk.dtu.padelbattle.view.navigation.TournamentView
@@ -17,11 +18,32 @@ class SettingsViewModel : ViewModel() {
     private val _menuItems = MutableStateFlow<List<SettingsMenuItem>?>(null)
     val menuItems: StateFlow<List<SettingsMenuItem>?> = _menuItems.asStateFlow()
 
+    private val _showPointsDialog = MutableStateFlow(false)
+    val showPointsDialog: StateFlow<Boolean> = _showPointsDialog.asStateFlow()
+
+    private val _showWarningDialog = MutableStateFlow(false)
+    val showWarningDialog: StateFlow<Boolean> = _showWarningDialog.asStateFlow()
+
+    private val _pendingPointsChange = MutableStateFlow<Int?>(null)
+    val pendingPointsChange: StateFlow<Int?> = _pendingPointsChange.asStateFlow()
+
+    private var currentTournament: Tournament? = null
+    private var onTournamentUpdated: (() -> Unit)? = null
+
     /**
      * Opdaterer settings menu items baseret på den aktuelle skærm.
      * @param screen Den nuværende skærm
+     * @param tournament Den aktuelle turnering (kun relevant for TournamentView)
+     * @param onUpdate Callback når turneringen opdateres
      */
-    fun updateScreen(screen: Screen) {
+    fun updateScreen(
+        screen: Screen,
+        tournament: Tournament? = null,
+        onUpdate: (() -> Unit)? = null
+    ) {
+        currentTournament = tournament
+        onTournamentUpdated = onUpdate
+
         _menuItems.value = when (screen) {
             is TournamentView -> getTournamentViewMenuItems()
             else -> null // Ingen settings menu på andre skærme
@@ -34,15 +56,12 @@ class SettingsViewModel : ViewModel() {
     private fun getTournamentViewMenuItems(): List<SettingsMenuItem> {
         return listOf(
             SettingsMenuItem("Ændre antal baner") {
-                // TODO: Funktionalitet implementeres senere
                 onChangeNumberOfCourts()
             },
             SettingsMenuItem("Ændre antal points") {
-                // TODO: Funktionalitet implementeres senere
                 onChangePointsPerMatch()
             },
             SettingsMenuItem("Slet turnering") {
-                // TODO: Funktionalitet implementeres senere
                 onDeleteTournament()
             }
         )
@@ -58,10 +77,56 @@ class SettingsViewModel : ViewModel() {
 
     /**
      * Håndterer ændring af antal points per kamp.
-     * TODO: Implementer funktionalitet
+     * Viser dialog til brugeren.
      */
     private fun onChangePointsPerMatch() {
-        // Placeholder - implementeres senere
+        _showPointsDialog.value = true
+    }
+
+    /**
+     * Kaldes når brugeren vælger et nyt antal points.
+     * Tjekker om der er spillede kampe og viser advarsel hvis nødvendigt.
+     */
+    fun onPointsSelected(newPoints: Int) {
+        val tournament = currentTournament ?: return
+
+        if (tournament.hasPlayedMatches()) {
+            // Der er spillede kampe - vis advarsel
+            _pendingPointsChange.value = newPoints
+            _showWarningDialog.value = true
+        } else {
+            // Ingen spillede kampe - opdater direkte
+            applyPointsChange(newPoints)
+        }
+
+        _showPointsDialog.value = false
+    }
+
+    /**
+     * Kaldes når brugeren bekræfter ændringen trods advarslen.
+     */
+    fun confirmPointsChange() {
+        val newPoints = _pendingPointsChange.value ?: return
+        applyPointsChange(newPoints)
+        _showWarningDialog.value = false
+        _pendingPointsChange.value = null
+    }
+
+    /**
+     * Kaldes når brugeren annullerer ændringen.
+     */
+    fun cancelPointsChange() {
+        _showWarningDialog.value = false
+        _pendingPointsChange.value = null
+    }
+
+    /**
+     * Anvender den nye points værdi på turneringen.
+     */
+    private fun applyPointsChange(newPoints: Int) {
+        val tournament = currentTournament ?: return
+        tournament.pointsPerMatch = newPoints
+        onTournamentUpdated?.invoke()
     }
 
     /**
@@ -78,6 +143,10 @@ class SettingsViewModel : ViewModel() {
      */
     fun setCustomMenuItems(items: List<SettingsMenuItem>?) {
         _menuItems.value = items
+    }
+
+    fun dismissPointsDialog() {
+        _showPointsDialog.value = false
     }
 }
 

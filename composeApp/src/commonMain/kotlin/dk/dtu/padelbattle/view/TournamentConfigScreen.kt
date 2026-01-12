@@ -475,7 +475,7 @@ private fun ScrollWheelPickerPopup(
 }
 
 @Composable
-private fun PointsPickerDialog(
+fun PointsPickerDialog(
     currentValue: Int,
     onValueChange: (Int) -> Unit,
     onDismiss: () -> Unit

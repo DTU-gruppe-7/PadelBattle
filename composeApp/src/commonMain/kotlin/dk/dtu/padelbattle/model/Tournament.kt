@@ -8,7 +8,7 @@ class Tournament(
     val type: TournamentType,
     val dateCreated: Long,
     val numberOfCourts: Int = 1, // Default to 1, valid range: 1-4
-    val pointsPerMatch: Int = 16,
+    var pointsPerMatch: Int = 16,
     val players: MutableList<Player> = mutableListOf(),
     val matches: MutableList<Match> = mutableListOf(),
     var isCompleted: Boolean = false
@@ -27,6 +27,12 @@ class Tournament(
      * Hver bane kræver 4 spillere, så max baner = antal spillere / 4
      */
     fun getMaxCourts(): Int = (players.size / 4).coerceAtLeast(1)
+
+    /**
+     * Tjekker om der er nogle kampe der allerede er blevet spillet.
+     * Returnerer true hvis mindst én kamp har isPlayed = true
+     */
+    fun hasPlayedMatches(): Boolean = matches.any { it.isPlayed }
 
     /**
      * Returnerer det faktiske antal baner der vil blive brugt.

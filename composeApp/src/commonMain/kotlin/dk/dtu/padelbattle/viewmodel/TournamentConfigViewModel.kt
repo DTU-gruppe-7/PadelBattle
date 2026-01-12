@@ -117,7 +117,7 @@ class TournamentConfigViewModel(
                     name = _tournamentName.value,
                     type = tournamentType,
                     dateCreated = Clock.System.now().toEpochMilliseconds(),
-                    numberOfCourts = (players.size / 4).coerceIn(1, 4),
+                    numberOfCourts = _numberOfCourts.value,
                     pointsPerMatch = _pointsPerMatch.value,
                     players = players
                 )

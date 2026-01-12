@@ -100,6 +100,7 @@ fun NavigationGraph(
                     tournamentConfigViewModel.reset()
                 },
                 onGoBack = {
+                    tournamentConfigViewModel.reset()
                     navController.popBackStack()
                 }
             )

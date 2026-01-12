@@ -67,24 +67,11 @@ fun TournamentConfigScreen(
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
 
-    // Reset ViewModel when entering the screen fresh (not for duplication)
-    LaunchedEffect(duplicateFromId) {
-        if (duplicateFromId == null) {
-            viewModel.reset()
-        }
-    }
-
     // Load tournament data for duplication if duplicateFromId is provided
+    // Only runs once when duplicateFromId changes (including initial composition)
     LaunchedEffect(duplicateFromId) {
-        duplicateFromId?.let { tournamentId ->
-            viewModel.loadTournamentForDuplication(tournamentId)
-        }
-    }
-
-    // Reset ViewModel when leaving the screen
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.reset()
+        if (duplicateFromId != null) {
+            viewModel.loadTournamentForDuplication(duplicateFromId)
         }
     }
 

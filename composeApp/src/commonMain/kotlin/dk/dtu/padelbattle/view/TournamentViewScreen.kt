@@ -21,6 +21,7 @@ fun TournamentViewScreen(
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
     selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onGoBack: () -> Unit
 ) {
     val tournament by viewModel.tournament.collectAsState()
@@ -50,6 +51,13 @@ fun TournamentViewScreen(
                                 viewModel.notifyTournamentUpdated()
                                 // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
                                 standingsViewModel.setPlayers(currentTournament.players.map { it.copy() })
+                            },
+                            onTournamentCompleted = {
+                                // Marker turneringen som completed i memory
+                                currentTournament.isCompleted = true
+                                viewModel.notifyTournamentUpdated()
+                                // Skift til standings tab (genbruger logik fra bottom bar)
+                                onTabSelected(1)
                             }
                         )
                     } else {

@@ -41,7 +41,8 @@ fun MatchListScreen(
     currentTournament: Tournament,
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
-    onMatchUpdated: () -> Unit
+    onMatchUpdated: () -> Unit,
+    onTournamentCompleted: () -> Unit = {}
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedMatchIndex by remember { mutableStateOf(0) }
@@ -157,7 +158,8 @@ fun MatchListScreen(
                 matchListViewModel.notifyMatchUpdated()
                 onMatchUpdated()
             },
-            onDismiss = { showEditDialog = false }
+            onDismiss = { showEditDialog = false },
+            onTournamentCompleted = onTournamentCompleted
         )
     }
 }

@@ -30,6 +30,7 @@ fun NavigationGraph(
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
     selectedTab: Int = 0,
+    onTabSelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -99,6 +100,7 @@ fun NavigationGraph(
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
                 selectedTab = selectedTab,
+                onTabSelected = onTabSelected,
                 onGoBack = {
                     navController.popBackStack()
                 }

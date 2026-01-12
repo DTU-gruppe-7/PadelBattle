@@ -55,7 +55,8 @@ fun App(
     val matchEditViewModel: MatchEditViewModel = viewModel {
         MatchEditViewModel(
             database.matchDao(),
-            database.playerDao()
+            database.playerDao(),
+            database.tournamentDao()
         )
     }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
@@ -102,6 +103,7 @@ fun App(
                 matchEditViewModel = matchEditViewModel,
                 matchListViewModel = matchListViewModel,
                 selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
                 modifier = Modifier.padding(contentPadding)
             )
         }

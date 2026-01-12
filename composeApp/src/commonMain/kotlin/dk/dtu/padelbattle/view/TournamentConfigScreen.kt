@@ -53,7 +53,8 @@ fun TournamentConfigScreen(
     tournamentType: TournamentType,
     viewModel: TournamentConfigViewModel,
     onTournamentCreated: (Tournament) -> Unit,
-    onGoBack: () -> Unit
+    onGoBack: () -> Unit,
+    duplicateFromId: String? = null
 ) {
     val tournamentName by viewModel.tournamentName.collectAsState()
     val playerNames by viewModel.playerNames.collectAsState()
@@ -64,6 +65,13 @@ fun TournamentConfigScreen(
 
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
+
+    // Load tournament data for duplication if duplicateFromId is provided
+    LaunchedEffect(duplicateFromId) {
+        duplicateFromId?.let { tournamentId ->
+            viewModel.loadTournamentForDuplication(tournamentId)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(

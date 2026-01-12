@@ -21,6 +21,7 @@ import dk.dtu.padelbattle.view.navigation.NavigationGraph
 import dk.dtu.padelbattle.view.navigation.TopBar
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
+import dk.dtu.padelbattle.view.TextInputDialog
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
@@ -29,6 +30,7 @@ import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import dk.dtu.padelbattle.viewmodel.SettingsViewModel
+import dk.dtu.padelbattle.viewmodel.SettingsDialogType
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -52,19 +54,32 @@ fun App(
             database.matchDao()
         )
     }
-    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel() }
+    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel(database.tournamentDao()) }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
     val matchEditViewModel: MatchEditViewModel = viewModel {
         MatchEditViewModel(
             database.matchDao(),
-            database.playerDao()
+            database.playerDao(),
+            database.tournamentDao()
         )
     }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
-    val settingsViewModel: SettingsViewModel = viewModel { SettingsViewModel() }
+    val settingsViewModel: SettingsViewModel = viewModel {
+        SettingsViewModel(database.tournamentDao())
+    }
 
     MaterialTheme {
         val navController = rememberNavController()
+        LaunchedEffect(navController) {
+            settingsViewModel.setOnDeleteTournament {
+                tournamentViewModel.deleteTournament(
+                    onSuccess = {
+                        // Naviger tilbage til start, når sletningen er færdig
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
         var selectedTab by remember { mutableStateOf(0) }
@@ -84,6 +99,41 @@ fun App(
             onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
         )
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
+        val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
+        val currentTournament by tournamentViewModel.tournament.collectAsState()
+
+        // Opdater SettingsViewModel med den aktuelle turnering
+        LaunchedEffect(currentTournament) {
+            settingsViewModel.setCurrentTournament(currentTournament) { newName ->
+                // Notificer TournamentViewModel om ændringen
+                currentTournament?.let { tournament ->
+                    tournamentViewModel.notifyTournamentUpdated()
+                    // Naviger til TournamentView med det nye navn for at opdatere topbaren
+                    navController.navigate(TournamentView(tournamentName = newName)) {
+                        popUpTo(TournamentView::class) { inclusive = true }
+                    }
+                }
+            }
+        }
+
+        // Vis dialog baseret på currentDialogType
+        when (val dialogType = currentDialogType) {
+            is SettingsDialogType.EditTournamentName -> {
+                TextInputDialog(
+                    title = "Ændr turneringsnavn",
+                    label = "Turneringsnavn",
+                    currentValue = dialogType.currentName,
+                    onConfirm = { newName ->
+                        settingsViewModel.updateTournamentName(dialogType.tournamentId, newName)
+                    },
+                    onDismiss = { settingsViewModel.dismissDialog() },
+                    validateInput = { name ->
+                        if (name.isBlank()) "Navn må ikke være tomt" else null
+                    }
+                )
+            }
+            null -> { /* Ingen dialog */ }
+        }
 
         Scaffold(
             topBar = {
@@ -116,6 +166,7 @@ fun App(
                 matchListViewModel = matchListViewModel,
                 settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
                 modifier = Modifier.padding(contentPadding)
             )
         }

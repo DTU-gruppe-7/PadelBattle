@@ -45,7 +45,8 @@ fun MatchEditDialog(
     currentTournament: Tournament,
     viewModel: MatchEditViewModel,
     onSave: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onTournamentCompleted: () -> Unit = {}
 ) {
     val scoreTeam1 by viewModel.scoreTeam1.collectAsState()
     val scoreTeam2 by viewModel.scoreTeam2.collectAsState()
@@ -168,10 +169,13 @@ fun MatchEditDialog(
                         onClick = {
                             if (!isSaving) {
                                 isSaving = true
-                                viewModel.saveMatch(currentTournament.id) { savedMatch ->
+                                viewModel.saveMatch(currentTournament.id) { savedMatch, isTournamentCompleted ->
                                     isSaving = false
                                     if (savedMatch != null) {
                                         onSave()
+                                        if (isTournamentCompleted) {
+                                            onTournamentCompleted()
+                                        }
                                     } else {
                                         // Fejl skete - lad dialogen være åben
                                         println("Failed to save match")

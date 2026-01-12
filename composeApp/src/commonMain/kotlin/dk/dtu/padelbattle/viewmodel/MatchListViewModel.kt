@@ -6,10 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/**
- * ViewModel til at håndtere kamplisten.
- * Holder styr på kampe og trigger recomposition når kampe opdateres.
- */
 class MatchListViewModel : ViewModel() {
 
     private val _matches = MutableStateFlow<List<Match>>(emptyList())
@@ -21,29 +17,45 @@ class MatchListViewModel : ViewModel() {
     private val _currentRound = MutableStateFlow(1)
     val currentRound: StateFlow<Int> = _currentRound.asStateFlow()
 
-    /**
-     * Sætter den aktuelle runde.
-     */
     fun setCurrentRound(round: Int) {
         _currentRound.value = round
     }
 
     /**
-     * Sætter listen af kampe.
-     * Opdaterer state, hvilket automatisk trigger recomposition.
-     * Laver en ny liste-instans for at sikre at StateFlow opdager ændringer.
+     * Kaldes når man går ind på en turnering.
+     * Sætter kampene OG nulstiller visningen til den første runde, der ikke er færdigspillet.
      */
-    fun setMatches(matches: List<Match>) {
+    fun loadTournament(matches: List<Match>) {
+        _matches.value = matches.toList()
+        _revision.value++
+
+        // 1. Sorter kampene efter runde (for en sikkerheds skyld) og find den første kamp, der IKKE er spillet
+        val firstUnplayedMatch = matches
+            .sortedBy { it.roundNumber }
+            .firstOrNull { !it.isPlayed }
+
+        // 2. Bestem hvilken runde der skal vises:
+        // - Hvis vi fandt en uspillet kamp -> Brug dens runde.
+        // - Hvis alle er spillet (firstUnplayedMatch er null) -> Brug den sidste runde (max).
+        // - Hvis listen er tom -> Brug runde 1.
+        val targetRound = firstUnplayedMatch?.roundNumber
+            ?: matches.maxOfOrNull { it.roundNumber }
+            ?: 1
+
+        _currentRound.value = targetRound
+    }
+
+    /**
+     * Bruges til løbende opdateringer (f.eks. score-indtastning),
+     * uden at ændre hvilken runde brugeren kigger på.
+     */
+    fun updateMatches(matches: List<Match>) {
         _matches.value = matches.toList()
         _revision.value++
     }
 
-    /**
-     * Notificerer at en kamp er opdateret.
-     * Bruges når Match objekter ændres in-place.
-     */
+    // Behold notifyMatchUpdated hvis du bruger den til in-place ændringer
     fun notifyMatchUpdated() {
         _revision.value++
     }
 }
-

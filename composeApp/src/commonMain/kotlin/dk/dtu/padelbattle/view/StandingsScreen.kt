@@ -19,7 +19,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
@@ -44,6 +46,7 @@ fun StandingsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // Header
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -58,40 +61,57 @@ fun StandingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Plac.",
+                    text = "",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(0.8f)
+                    modifier = Modifier.weight(0.5f),
+                    textAlign = TextAlign.Center
                 )
                 Text(
                     text = "Spiller",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(2f)
+                    modifier = Modifier.weight(1.5f)
+                )
+                Text(
+                    text = "W-L-D",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1.2f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Diff",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(0.8f),
+                    textAlign = TextAlign.Center
                 )
                 Text(
                     text = "Point",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(0.8f)
-                )
-                Text(
-                    text = "Kampe",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(0.8f)
+                    modifier = Modifier.weight(0.8f),
+                    textAlign = TextAlign.Center
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Spillerliste
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val leaderPoints = sortedPlayers.firstOrNull()?.totalPoints ?: 0
+
             items(sortedPlayers.size) { index ->
                 val player = sortedPlayers[index]
-                StandingRow(player = player, position = index + 1)
+                StandingRow(
+                    player = player,
+                    position = index + 1,
+                    leaderPoints = leaderPoints
+                )
             }
         }
     }
@@ -100,16 +120,19 @@ fun StandingsScreen(
 @Composable
 private fun StandingRow(
     player: Player,
-    position: Int
+    position: Int,
+    leaderPoints: Int
 ) {
+    val difference = player.totalPoints - leaderPoints
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = when (position) {
-                1 -> MaterialTheme.colorScheme.tertiaryContainer
-                2 -> MaterialTheme.colorScheme.surfaceVariant
-                3 -> MaterialTheme.colorScheme.surfaceVariant
+                1 -> Color(0xFFFFF8DC)  // Lys cremegul (guld-agtig)
+                2 -> Color(0xFFE8E8E8)  // Lys grå (sølv-agtig)
+                3 -> Color(0xFFFFE4C4)  // Lys beige (bronze-agtig)
                 else -> MaterialTheme.colorScheme.surface
             }
         )
@@ -121,8 +144,9 @@ private fun StandingRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Placering
             Column(
-                modifier = Modifier.weight(0.8f),
+                modifier = Modifier.weight(0.5f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (position <= 3) {
@@ -145,28 +169,43 @@ private fun StandingRow(
                 }
             }
 
+            // Navn
             Text(
                 text = player.name,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (position <= 3) FontWeight.Bold else FontWeight.Normal,
-                modifier = Modifier.weight(2f)
+                modifier = Modifier.weight(1.5f)
             )
 
+            // W-L-D (Wins-Losses-Draws)
+            Text(
+                text = "${player.wins}-${player.losses}-${player.draws}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1.2f),
+                textAlign = TextAlign.Center
+            )
+
+            // Difference fra førstepladsen
+            Text(
+                text = if (position == 1) "-" else "$difference",
+                style = MaterialTheme.typography.bodyMedium,
+                color = when {
+                    position == 1 -> MaterialTheme.colorScheme.onSurface
+                    else -> MaterialTheme.colorScheme.error
+                },
+                modifier = Modifier.weight(0.8f),
+                textAlign = TextAlign.Center
+            )
+
+            // Total points
             Text(
                 text = player.totalPoints.toString(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(0.8f)
-            )
-
-            Text(
-                text = player.gamesPlayed.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(0.8f)
+                modifier = Modifier.weight(0.8f),
+                textAlign = TextAlign.Center
             )
         }
     }
 }
-
-

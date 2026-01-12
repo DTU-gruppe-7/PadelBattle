@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.dao.MatchDao
 import dk.dtu.padelbattle.data.dao.PlayerDao
+import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchResult
 import dk.dtu.padelbattle.model.utils.MatchResultService
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
  */
 class MatchEditViewModel(
     private val matchDao: MatchDao,
-    private val playerDao: PlayerDao
+    private val playerDao: PlayerDao,
+    private val tournamentDao: TournamentDao
 ) : ViewModel() {
 
     private val _pointsPerMatch = MutableStateFlow(1)
@@ -97,19 +99,19 @@ class MatchEditViewModel(
      * Gemmer kampresultatet via MatchResultService.
      * Returnerer den opdaterede kamp.
      * @param tournamentId ID på turneringen som kampen tilhører
-     * @param onComplete Callback når gemning er færdig
+     * @param onComplete Callback når gemning er færdig - modtager Match og boolean der indikerer om turneringen er afsluttet
      */
-    fun saveMatch(tournamentId: String, onComplete: (Match?) -> Unit) {
+    fun saveMatch(tournamentId: String, onComplete: (Match?, Boolean) -> Unit) {
         val match = _currentMatch.value
         if (match == null) {
-            onComplete(null)
+            onComplete(null, false)
             return
         }
 
         // Valider tournamentId
         if (tournamentId.isBlank()) {
             println("ERROR: tournamentId is blank, cannot save match")
-            onComplete(null)
+            onComplete(null, false)
             return
         }
 
@@ -122,11 +124,22 @@ class MatchEditViewModel(
         viewModelScope.launch {
             try {
                 matchResultService.recordMatchResult(match, newResult, tournamentId)
-                onComplete(match)
+
+                // Tjek om dette var den sidste ukampede kamp
+                val unplayedCount = matchDao.countUnplayedMatches(tournamentId)
+                val isTournamentCompleted = unplayedCount == 0
+
+                if (isTournamentCompleted) {
+                    // Marker turneringen som completed
+                    tournamentDao.updateTournamentCompleted(tournamentId, true)
+                    println("Tournament $tournamentId marked as completed")
+                }
+
+                onComplete(match, isTournamentCompleted)
             } catch (e: Exception) {
                 println("ERROR saving match: ${e.message}")
                 e.printStackTrace()
-                onComplete(null)
+                onComplete(null, false)
             }
         }
 

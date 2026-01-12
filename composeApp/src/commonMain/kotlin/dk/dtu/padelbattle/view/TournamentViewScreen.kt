@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -20,10 +21,18 @@ fun TournamentViewScreen(
     matchEditViewModel: MatchEditViewModel,
     matchListViewModel: MatchListViewModel,
     selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onGoBack: () -> Unit
 ) {
     val tournament by viewModel.tournament.collectAsState()
     val revision by viewModel.revision.collectAsState()
+
+    // Initialiser matchListViewModel når turneringen første gang indlæses
+    LaunchedEffect(tournament?.id) {
+        tournament?.let {
+            matchListViewModel.loadTournament(it.matches)
+        }
+    }
 
     key(revision) {
         Column(
@@ -42,6 +51,13 @@ fun TournamentViewScreen(
                                 viewModel.notifyTournamentUpdated()
                                 // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
                                 standingsViewModel.setPlayers(currentTournament.players.map { it.copy() })
+                            },
+                            onTournamentCompleted = {
+                                // Marker turneringen som completed i memory
+                                currentTournament.isCompleted = true
+                                viewModel.notifyTournamentUpdated()
+                                // Skift til standings tab (genbruger logik fra bottom bar)
+                                onTabSelected(1)
                             }
                         )
                     } else {

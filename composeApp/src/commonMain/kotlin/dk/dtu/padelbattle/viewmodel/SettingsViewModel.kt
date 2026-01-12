@@ -31,6 +31,7 @@ class SettingsViewModel(
     private val _menuItems = MutableStateFlow<List<SettingsMenuItem>?>(null)
     val menuItems: StateFlow<List<SettingsMenuItem>?> = _menuItems.asStateFlow()
     private var deleteAction: (() -> Unit)? = null
+    private var editTournamentNameAction: (() -> Unit)? = null
 
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
     val currentDialogType: StateFlow<SettingsDialogType?> = _currentDialogType.asStateFlow()
@@ -60,6 +61,10 @@ class SettingsViewModel(
     fun setOnDeleteTournament(action: () -> Unit) {
         deleteAction = action
     }
+
+    fun setOnEditTournamentName(action: () -> Unit) {
+        editTournamentNameAction = action
+    }
     /**
      * Opdaterer settings menu items baseret på den aktuelle skærm.
      * @param screen Den nuværende skærm
@@ -86,12 +91,7 @@ class SettingsViewModel(
     private fun getTournamentViewMenuItems(): List<SettingsMenuItem> {
         return listOf(
             SettingsMenuItem("Ændr turneringsnavn") {
-                currentTournament?.let { tournament ->
-                    _currentDialogType.value = SettingsDialogType.EditTournamentName(
-                        currentName = tournament.name,
-                        tournamentId = tournament.id
-                    )
-                }
+                editTournamentNameAction?.invoke()
             },
             SettingsMenuItem("Ændre antal baner") {
                 onChangeNumberOfCourts()

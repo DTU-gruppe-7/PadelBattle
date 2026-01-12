@@ -17,11 +17,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dk.dtu.padelbattle.data.PadelBattleDatabase
 import dk.dtu.padelbattle.view.navigation.BottomNavigationBar
+import dk.dtu.padelbattle.view.navigation.EditTournamentName
 import dk.dtu.padelbattle.view.navigation.NavigationGraph
 import dk.dtu.padelbattle.view.navigation.TopBar
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
-import dk.dtu.padelbattle.view.TextInputDialog
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
@@ -30,7 +30,6 @@ import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import dk.dtu.padelbattle.viewmodel.SettingsViewModel
-import dk.dtu.padelbattle.viewmodel.SettingsDialogType
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -79,6 +78,9 @@ fun App(
                     }
                 )
             }
+            settingsViewModel.setOnEditTournamentName {
+                navController.navigate(EditTournamentName)
+            }
         }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
@@ -93,7 +95,6 @@ fun App(
 
         // Hent turnering og opdater settings menu items baseret på current screen
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
-        val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
         val currentTournament by tournamentViewModel.tournament.collectAsState()
         settingsViewModel.updateScreen(
             screen = currentScreen,
@@ -115,24 +116,8 @@ fun App(
             }
         }
 
-        // Vis dialog baseret på currentDialogType
-        when (val dialogType = currentDialogType) {
-            is SettingsDialogType.EditTournamentName -> {
-                TextInputDialog(
-                    title = "Ændr turneringsnavn",
-                    label = "Turneringsnavn",
-                    currentValue = dialogType.currentName,
-                    onConfirm = { newName ->
-                        settingsViewModel.updateTournamentName(dialogType.tournamentId, newName)
-                    },
-                    onDismiss = { settingsViewModel.dismissDialog() },
-                    validateInput = { name ->
-                        if (name.isBlank()) "Navn må ikke være tomt" else null
-                    }
-                )
-            }
-            null -> { /* Ingen dialog */ }
-        }
+        // Dynamisk titel for TournamentView baseret på turneringsnavn fra ViewModel
+        val dynamicTitle = if (currentScreen is TournamentView) currentTournament?.name else null
 
         Scaffold(
             topBar = {
@@ -140,7 +125,8 @@ fun App(
                     currentScreen = currentScreen,
                     canNavigateBack = navController.previousBackStackEntry != null,
                     navigateUp = { navController.navigateUp() },
-                    settingsMenuItems = settingsMenuItems
+                    settingsMenuItems = settingsMenuItems,
+                    titleOverride = dynamicTitle
                 )
             },
             containerColor = Color.LightGray,

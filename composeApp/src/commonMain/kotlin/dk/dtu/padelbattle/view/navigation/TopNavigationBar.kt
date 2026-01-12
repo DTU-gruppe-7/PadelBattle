@@ -19,10 +19,11 @@ fun TopBar(
     canNavigateBack: Boolean,
     navigateUp: () -> Unit,
     modifier: Modifier = Modifier,
-    settingsMenuItems: List<SettingsMenuItem>? = null
+    settingsMenuItems: List<SettingsMenuItem>? = null,
+    titleOverride: String? = null
 ) {
     TopAppBar(
-        title = { Text(currentScreen.title) },
+        title = { Text(titleOverride ?: currentScreen.title) },
         modifier = modifier,
         navigationIcon = {
             if (canNavigateBack) {

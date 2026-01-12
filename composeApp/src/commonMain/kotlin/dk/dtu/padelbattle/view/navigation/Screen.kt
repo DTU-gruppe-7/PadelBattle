@@ -39,3 +39,8 @@ data class Gameplay(val playerNames: String): Screen {
     override val title = "Kamp"
 }
 
+@Serializable
+object EditTournamentName: Screen {
+    override val title = "Ændre Turneringsnavn"
+}
+

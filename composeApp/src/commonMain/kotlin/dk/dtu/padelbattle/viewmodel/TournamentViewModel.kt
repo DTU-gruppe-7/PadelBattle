@@ -3,6 +3,7 @@ package dk.dtu.padelbattle.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.dao.TournamentDao
+import dk.dtu.padelbattle.data.mapper.toEntity
 import dk.dtu.padelbattle.model.Tournament
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,9 @@ class TournamentViewModel(
     private val _tournament = MutableStateFlow<Tournament?>(null)
     val tournament: StateFlow<Tournament?> = _tournament.asStateFlow()
 
+    private val _tournamentName = MutableStateFlow("")
+    val tournamentName: StateFlow<String> = _tournamentName.asStateFlow()
+
     private val _revision = MutableStateFlow(0)
     val revision: StateFlow<Int> = _revision.asStateFlow()
 
@@ -26,6 +30,42 @@ class TournamentViewModel(
 
     fun setTournament(tournament: Tournament) {
         _tournament.value = tournament
+        _tournamentName.value = tournament.name
+    }
+
+    /**
+     * Opdaterer turneringens navn lokalt (til UI input).
+     */
+    fun updateTournamentNameInput(name: String) {
+        _tournamentName.value = name
+    }
+
+    /**
+     * Gemmer det opdaterede turneringsnavn til databasen.
+     */
+    fun saveTournamentName(onSuccess: () -> Unit) {
+        val currentTournament = _tournament.value ?: return
+        val newName = _tournamentName.value.trim()
+
+        if (newName.isEmpty()) {
+            _error.value = "Turneringsnavn må ikke være tomt"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                currentTournament.name = newName
+                tournamentDao.updateTournament(currentTournament.toEntity())
+                _tournament.value = currentTournament
+                notifyTournamentUpdated()
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = "Kunne ikke gemme: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun updateTournament(updatedTournament: Tournament) {

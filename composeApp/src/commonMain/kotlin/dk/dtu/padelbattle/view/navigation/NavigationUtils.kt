@@ -13,6 +13,7 @@ fun getCurrentScreen(backStackEntry: NavBackStackEntry?): Screen {
         Home::class.qualifiedName -> Home
         ChoosePlayer::class.qualifiedName -> ChoosePlayer
         ChooseTournament::class.qualifiedName -> ChooseTournament
+        EditTournamentName::class.qualifiedName -> EditTournamentName
         else -> {
             when {
                 route.startsWith(Gameplay::class.qualifiedName ?: "") ->

@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
+import dk.dtu.padelbattle.view.EditTournamentNameScreen
 import dk.dtu.padelbattle.view.HomeScreen
 import dk.dtu.padelbattle.view.TournamentConfigScreen
 import dk.dtu.padelbattle.view.TournamentViewScreen
@@ -115,6 +116,15 @@ fun NavigationGraph(
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected,
                 onGoBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<EditTournamentName> {
+            EditTournamentNameScreen(
+                viewModel = tournamentViewModel,
+                onSaved = {
                     navController.popBackStack()
                 }
             )

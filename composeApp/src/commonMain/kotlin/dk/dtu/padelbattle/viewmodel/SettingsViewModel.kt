@@ -30,6 +30,7 @@ class SettingsViewModel(
 
     private val _menuItems = MutableStateFlow<List<SettingsMenuItem>?>(null)
     val menuItems: StateFlow<List<SettingsMenuItem>?> = _menuItems.asStateFlow()
+    private var deleteAction: (() -> Unit)? = null
 
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
     val currentDialogType: StateFlow<SettingsDialogType?> = _currentDialogType.asStateFlow()
@@ -46,6 +47,10 @@ class SettingsViewModel(
         onTournamentUpdated = onUpdated
     }
 
+    // 2. Lav en funktion, så App.kt kan "injecte" handlingen
+    fun setOnDeleteTournament(action: () -> Unit) {
+        deleteAction = action
+    }
     /**
      * Opdaterer settings menu items baseret på den aktuelle skærm.
      * @param screen Den nuværende skærm
@@ -79,8 +84,7 @@ class SettingsViewModel(
                 onChangePointsPerMatch()
             },
             SettingsMenuItem("Slet turnering") {
-                // TODO: Funktionalitet implementeres senere
-                onDeleteTournament()
+                deleteAction?.invoke()
             }
         )
     }
@@ -131,13 +135,6 @@ class SettingsViewModel(
         // Placeholder - implementeres senere
     }
 
-    /**
-     * Håndterer sletning af turnering.
-     * TODO: Implementer funktionalitet
-     */
-    private fun onDeleteTournament() {
-        // Placeholder - implementeres senere
-    }
 
     /**
      * Tilføjer custom menu items for specifikke use cases.

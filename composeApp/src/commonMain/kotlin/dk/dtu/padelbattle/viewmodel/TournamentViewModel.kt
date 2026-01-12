@@ -2,13 +2,15 @@ package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.model.Tournament
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class TournamentViewModel : ViewModel() {
+class TournamentViewModel(
+    private val tournamentDao: TournamentDao) : ViewModel() {
 
     private val _tournament = MutableStateFlow<Tournament?>(null)
     val tournament: StateFlow<Tournament?> = _tournament.asStateFlow()
@@ -43,6 +45,24 @@ class TournamentViewModel : ViewModel() {
      * Notificerer at turneringens data er blevet opdateret (f.eks. kampresultater).
      * Dette trigger en recomposition af UI'et ved at inkrementere revision counter.
      */
+    fun deleteTournament(onSuccess: () -> Unit) {
+        val currentId = _tournament.value?.id ?: return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Slet fra DB (Antager du har mapper funktionen eller kalder dao direkte)
+                dk.dtu.padelbattle.data.mapper.deleteTournamentFromDao(currentId, tournamentDao)
+
+                _tournament.value = null
+                onSuccess() // Naviger væk
+            } catch (e: Exception) {
+                _error.value = "Kunne ikke slette: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
     fun notifyTournamentUpdated() {
         _revision.value++
     }

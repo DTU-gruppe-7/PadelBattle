@@ -110,7 +110,7 @@ class SettingsViewModel(
                 duplicateAction?.invoke()
             },
             SettingsMenuItem("Slet Turnering") {
-                deleteAction?.invoke()
+                deleteConfirmation.show { deleteAction?.invoke() }
             }
         )
     }

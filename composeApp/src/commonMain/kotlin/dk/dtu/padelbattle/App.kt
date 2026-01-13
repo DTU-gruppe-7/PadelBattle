@@ -105,21 +105,6 @@ fun App(
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
         val currentTournament by tournamentViewModel.tournament.collectAsState()
 
-        // Sæt duplicate-handlingen efter currentTournament er tilgængelig
-        LaunchedEffect(Unit) {
-            settingsViewModel.setOnDuplicateTournament {
-                currentTournament?.let { tournament ->
-                    val (tournamentType, tournamentId) = homeViewModel.getDuplicationNavigationData(tournament)
-                    navController.navigate(
-                        TournamentConfig(
-                            tournamentType = tournamentType,
-                            duplicateFromId = tournamentId
-                        )
-                    )
-                }
-            }
-        }
-
         settingsViewModel.updateScreen(
             screen = currentScreen,
             tournament = currentTournament,

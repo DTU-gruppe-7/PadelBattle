@@ -1,6 +1,7 @@
 package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
+import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.model.Tournament
@@ -30,23 +31,19 @@ class SettingsViewModel(
 
     private val _menuItems = MutableStateFlow<List<SettingsMenuItem>?>(null)
     val menuItems: StateFlow<List<SettingsMenuItem>?> = _menuItems.asStateFlow()
+
+    // Fælles handler til delete confirmation dialog
+    val deleteConfirmation = DeleteConfirmationHandler()
+
     private var deleteAction: (() -> Unit)? = null
     private var duplicateAction: (() -> Unit)? = null
 
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
     val currentDialogType: StateFlow<SettingsDialogType?> = _currentDialogType.asStateFlow()
 
-    // Reference til den aktuelle turnering (sættes fra TournamentViewModel)
+    // Reference til den aktuelle turnering (sættes fra updateScreen)
     private var currentTournament: Tournament? = null
     private var onTournamentUpdated: (() -> Unit)? = null
-
-    /**
-     * Sætter den aktuelle turnering og callback for opdateringer
-     */
-    fun setCurrentTournament(tournament: Tournament?, onUpdated: (() -> Unit)?) {
-        currentTournament = tournament
-        onTournamentUpdated = onUpdated
-    }
 
     private val _showPointsDialog = MutableStateFlow(false)
     val showPointsDialog: StateFlow<Boolean> = _showPointsDialog.asStateFlow()
@@ -137,7 +134,7 @@ class SettingsViewModel(
                 // Opdater i den lokale model
                 currentTournament?.name = newName
 
-                // Notificer UI om ændringen
+                // Notificer UI om ændringen (trigger revision opdatering)
                 onTournamentUpdated?.invoke()
 
                 // Luk dialogen

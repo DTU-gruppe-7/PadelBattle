@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.dao.MatchDao
 import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.data.dao.TournamentDao
+import dk.dtu.padelbattle.data.mapper.deleteTournamentFromDao
 import dk.dtu.padelbattle.data.mapper.getAllTournamentsWithDetails
 import dk.dtu.padelbattle.model.Tournament
+import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,28 +30,23 @@ class HomeViewModel(
             initialValue = emptyList()
         )
 
-    /**
-     * Returnerer navigation data til duplikering af en turnering.
-     *
-     * @param tournament Turneringen der skal duplikeres
-     * @return Pair af (tournamentType, tournamentId) der kan bruges til navigation
-     */
-    fun getDuplicationNavigationData(tournament: Tournament): Pair<String, String> {
-        return Pair(tournament.type.name, tournament.id)
-    }
+    // Fælles handler til delete confirmation dialog
+    val deleteConfirmation = DeleteConfirmationHandler()
 
     /**
-     * Sletter en turnering fra databasen.
-     * TODO: Implementer denne metode når slet-funktionaliteten skal laves
-     *
-     * @param tournament Turneringen der skal slettes
+     * Viser bekræftelsesdialog for sletning af turnering.
      */
-    fun deleteTournament(tournament: Tournament) {//TODO: DELETE WHEN MERGED
-        viewModelScope.launch {
-            // TODO: Implementer sletning af turnering
-            // tournamentDao.deleteTournamentById(tournament.id)
-            // playerDao.deletePlayersByTournament(tournament.id)
-            // matchDao.deleteMatchesByTournament(tournament.id)
+    fun showDeleteConfirmationDialog(tournament: Tournament) {
+        deleteConfirmation.show {
+            viewModelScope.launch {
+                try {
+                    deleteTournamentFromDao(tournament.id, tournamentDao)
+                    // Listen opdateres automatisk via StateFlow
+                } catch (e: Exception) {
+                    // Log fejl hvis nødvendigt
+                    println("Fejl ved sletning af turnering: ${e.message}")
+                }
+            }
         }
     }
 }

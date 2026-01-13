@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,9 +37,29 @@ fun HomeScreen(
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
+    val showDeleteConfirmation by viewModel.deleteConfirmation.showDeleteConfirmation.collectAsState()
 
     val activeTournaments = tournaments.filter { !it.isCompleted }
     val completedTournaments = tournaments.filter { it.isCompleted }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.deleteConfirmation.dismiss() },
+            title = { Text("Slet turnering") },
+            text = { Text("Er du sikker på, at du vil slette denne turnering? Denne handling kan ikke fortrydes.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteConfirmation.confirm() }) {
+                    Text("Slet", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) {
+                    Text("Annuller")
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -121,14 +142,11 @@ fun HomeScreen(
                         TournamentItemCard(
                             tournament = currentTournaments[index],
                             onClick = { onTournamentClicked(currentTournaments[index].id) },
+                      
                             onDuplicate = { tournament ->
-                                val (tournamentType, tournamentId) = viewModel.getDuplicationNavigationData(tournament)
-                                onDuplicateTournament?.invoke(tournamentType, tournamentId)
+                                onDuplicateTournament?.invoke(tournament.type.name, tournament.id)
                             },
-                            onDelete = { tournament ->
-                                // TODO: Implementer sletning
-                                viewModel.deleteTournament(tournament)
-                            }
+                            onDelete = { tournament -> viewModel.showDeleteConfirmationDialog(tournament) }
                         )
                     }
                 }
@@ -142,15 +160,22 @@ fun HomeScreen(
 fun TournamentItemCard(
     tournament: Tournament,
     onClick: () -> Unit,
-    onDuplicate: ((Tournament) -> Unit)? = null,
-    onDelete: ((Tournament) -> Unit)? = null // TODO: Implementer sletnings-funktionalitet
+    onDuplicate: ((Tournament) -> Unit),
+    onDelete: ((Tournament) -> Unit)? = null
 ) {
+    // Track whether we've already triggered duplicate to prevent re-triggering
+    var hasDuplicated by remember { mutableStateOf(false) }
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     // Swipe til højre -> Dupliker turnering
-                    onDuplicate?.invoke(tournament)
+                    // Only trigger if we haven't already duplicated
+                    if (!hasDuplicated) {
+                        hasDuplicated = true
+                        onDuplicate.invoke(tournament)
+                    }
                     false // Return false to prevent dismissal and reset state
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
@@ -163,6 +188,13 @@ fun TournamentItemCard(
         },
         positionalThreshold = { it * 0.25f }
     )
+
+    // Reset hasDuplicated flag when dismissState settles back
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
+            hasDuplicated = false
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
@@ -207,11 +239,32 @@ fun TournamentItemCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(
-                            text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        ) 
+                        if (tournament.isCompleted) {
+                            // Din logik til at finde vindere
+                            val winners = tournament.players.let { players ->
+                                val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
+                                players.filter { it.totalPoints == maxPoints }.map { it.name }
+                            }
+
+                            // Vis vinder-teksten fremhævet
+                            Text(
+                                text = buildString {
+                                    append("🏆 ")
+                                    append(if (winners.size > 1) "Vindere: " else "Vinder: ")
+                                    append(winners.joinToString(" & "))
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary, // Bruger appens primære farve
+                                maxLines = 1 // Sikrer at det ikke fylder for meget, hvis der er mange
+                            )
+                        } else {
+                            Text(
+                                text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         if (tournament.isCompleted) {
                             Text(
                                 text = "Afsluttet",

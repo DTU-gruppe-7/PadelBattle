@@ -6,9 +6,12 @@ import dk.dtu.padelbattle.data.dao.MatchDao
 import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.data.mapper.loadFullTournamentFromDao
+import dk.dtu.padelbattle.data.mapper.toEntity
 import dk.dtu.padelbattle.data.entity.PlayerEntity
+import dk.dtu.padelbattle.model.MexicanoExtensionTracker
 import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.model.Tournament
+import dk.dtu.padelbattle.model.TournamentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -147,6 +150,59 @@ class TournamentViewModel(
                 notifyTournamentUpdated()
             } catch (e: Exception) {
                 _error.value = "Kunne ikke opdatere spillernavn: ${e.message}"
+            }
+        }
+    }
+
+    /**
+     * Fortsætter en afsluttet turnering ved at generere en ny runde.
+     * Markerer turneringen som ikke-afsluttet og gemmer de nye kampe til databasen.
+     * @param onSuccess Callback der kaldes når operationen er færdig - navigér til kampe-tab
+     */
+    fun continueTournament(onSuccess: () -> Unit) {
+        val currentTournament = _tournament.value ?: return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // 1. Generer ny runde
+                val success = currentTournament.extendTournament()
+                
+                if (!success) {
+                    _error.value = "Kunne ikke generere ny runde"
+                    return@launch
+                }
+                
+                // 2. Find de nye kampe (dem der ikke er spillet endnu)
+                val newMatches = currentTournament.matches.filter { !it.isPlayed }
+                
+                if (newMatches.isEmpty()) {
+                    _error.value = "Ingen nye kampe blev genereret"
+                    return@launch
+                }
+                
+                // 3. Gem de nye kampe til databasen
+                matchDao.insertMatches(newMatches.map { it.toEntity(currentTournament.id) })
+                
+                // 4. For Mexicano: Registrer at turneringen er udvidet (kræver 2 runder mere)
+                if (currentTournament.type == TournamentType.MEXICANO) {
+                    MexicanoExtensionTracker.registerExtension(currentTournament.id)
+                }
+                
+                // 5. Marker turneringen som ikke-afsluttet
+                currentTournament.isCompleted = false
+                tournamentDao.updateTournamentCompleted(currentTournament.id, false)
+                
+                // 5. Opdater UI
+                notifyTournamentUpdated()
+                
+                // 6. Kald success callback
+                onSuccess()
+                
+            } catch (e: Exception) {
+                _error.value = "Kunne ikke fortsætte turnering: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }

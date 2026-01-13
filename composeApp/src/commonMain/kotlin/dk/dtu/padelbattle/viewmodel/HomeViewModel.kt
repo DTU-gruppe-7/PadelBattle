@@ -10,17 +10,21 @@ import dk.dtu.padelbattle.data.mapper.getAllTournamentsWithDetails
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class HomeViewModel(
     private val tournamentDao: TournamentDao,
     private val playerDao: PlayerDao,
     private val matchDao: MatchDao
 ) : ViewModel() {
+
+    // Søgetilstand
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     // Henter fulde turneringer med spillere og kampe
     val tournaments: StateFlow<List<Tournament>> = tournamentDao.getAllTournamentsWithDetails(playerDao, matchDao)
@@ -29,6 +33,14 @@ class HomeViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+    }
 
     // Fælles handler til delete confirmation dialog
     val deleteConfirmation = DeleteConfirmationHandler()
@@ -48,5 +60,16 @@ class HomeViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Returnerer navigation data til duplikering af en turnering.
+     * Ekstraherer tournamentType og tournamentId som Strings til navigation.
+     *
+     * @param tournament Turneringen der skal duplikeres
+     * @return Pair af (tournamentType, tournamentId) der kan bruges til navigation
+     */
+    fun getDuplicationNavigationData(tournament: Tournament): Pair<String, String> {
+        return Pair(tournament.type.name, tournament.id)
     }
 }

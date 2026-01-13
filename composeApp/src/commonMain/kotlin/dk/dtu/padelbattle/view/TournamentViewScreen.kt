@@ -78,7 +78,11 @@ fun TournamentViewScreen(
                 1 -> StandingsScreen(
                     players = tournament?.players ?: emptyList(),
                     viewModel = standingsViewModel,
-                    revision = revision
+                    pointsPerMatch = tournament?.pointsPerMatch ?: 16,
+                    revision = revision,
+                    onPlayerNameChanged = { player, newName ->
+                        viewModel.updatePlayerName(player, newName)
+                    }
                 )
             }
         }

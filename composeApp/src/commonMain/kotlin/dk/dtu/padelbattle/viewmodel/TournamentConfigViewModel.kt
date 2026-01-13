@@ -21,7 +21,7 @@ class TournamentConfigViewModel(
     private val matchDao: MatchDao
 ) : ViewModel() {
 
-    private val _tournamentName = MutableStateFlow("Turnering")
+    private val _tournamentName = MutableStateFlow("")
     val tournamentName: StateFlow<String> = _tournamentName.asStateFlow()
 
     private val _playerNames = MutableStateFlow<List<String>>(emptyList())
@@ -136,7 +136,7 @@ class TournamentConfigViewModel(
     }
 
     fun reset() {
-        _tournamentName.value = "Turnering"
+        _tournamentName.value = ""
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
         _numberOfCourts.value = 1

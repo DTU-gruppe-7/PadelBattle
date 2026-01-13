@@ -36,6 +36,7 @@ class SettingsViewModel(
     val deleteConfirmation = DeleteConfirmationHandler()
 
     private var deleteAction: (() -> Unit)? = null
+    private var duplicateAction: (() -> Unit)? = null
 
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
     val currentDialogType: StateFlow<SettingsDialogType?> = _currentDialogType.asStateFlow()
@@ -57,6 +58,15 @@ class SettingsViewModel(
     fun setOnDeleteTournament(action: () -> Unit) {
         deleteAction = action
     }
+
+    /**
+     * Sætter callback-funktionen for at duplikere en turnering.
+     * Bruges til at navigere til TournamentConfigScreen med duplicate-parametrene.
+     */
+    fun setOnDuplicateTournament(action: () -> Unit) {
+        duplicateAction = action
+    }
+
     /**
      * Opdaterer settings menu items baseret på den aktuelle skærm.
      * @param screen Den nuværende skærm
@@ -90,16 +100,17 @@ class SettingsViewModel(
                     )
                 }
             },
-            SettingsMenuItem("Ændre antal baner") {
+            SettingsMenuItem("Ændre Antal Baner") {
                 onChangeNumberOfCourts()
             },
-            SettingsMenuItem("Ændre antal points") {
+            SettingsMenuItem("Ændre Antal Points") {
                 onChangePointsPerMatch()
             },
-            SettingsMenuItem("Slet turnering") {
-                deleteConfirmation.show {
-                    deleteAction?.invoke()
-                }
+            SettingsMenuItem("Kopier Turnering") {
+                duplicateAction?.invoke()
+            },
+            SettingsMenuItem("Slet Turnering") {
+                deleteAction?.invoke()
             }
         )
     }

@@ -70,7 +70,9 @@ fun App(
 
     MaterialTheme {
         val navController = rememberNavController()
+
         LaunchedEffect(Unit) {
+
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -80,6 +82,7 @@ fun App(
                 )
             }
         }
+
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
         var selectedTab by remember { mutableStateOf(0) }
@@ -101,6 +104,22 @@ fun App(
         // Hent turnering og opdater settings menu items baseret på current screen
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
         val currentTournament by tournamentViewModel.tournament.collectAsState()
+
+        // Sæt duplicate-handlingen efter currentTournament er tilgængelig
+        LaunchedEffect(Unit) {
+            settingsViewModel.setOnDuplicateTournament {
+                currentTournament?.let { tournament ->
+                    val (tournamentType, tournamentId) = homeViewModel.getDuplicationNavigationData(tournament)
+                    navController.navigate(
+                        TournamentConfig(
+                            tournamentType = tournamentType,
+                            duplicateFromId = tournamentId
+                        )
+                    )
+                }
+            }
+        }
+
         settingsViewModel.updateScreen(
             screen = currentScreen,
             tournament = currentTournament,

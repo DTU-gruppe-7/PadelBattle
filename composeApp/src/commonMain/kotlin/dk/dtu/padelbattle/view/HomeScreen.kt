@@ -239,11 +239,32 @@ fun TournamentItemCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(
-                            text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        ) 
+                        if (tournament.isCompleted) {
+                            // Din logik til at finde vindere
+                            val winners = tournament.players.let { players ->
+                                val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
+                                players.filter { it.totalPoints == maxPoints }.map { it.name }
+                            }
+
+                            // Vis vinder-teksten fremhævet
+                            Text(
+                                text = buildString {
+                                    append("🏆 ")
+                                    append(if (winners.size > 1) "Vindere: " else "Vinder: ")
+                                    append(winners.joinToString(" & "))
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary, // Bruger appens primære farve
+                                maxLines = 1 // Sikrer at det ikke fylder for meget, hvis der er mange
+                            )
+                        } else {
+                            Text(
+                                text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         if (tournament.isCompleted) {
                             Text(
                                 text = "Afsluttet",

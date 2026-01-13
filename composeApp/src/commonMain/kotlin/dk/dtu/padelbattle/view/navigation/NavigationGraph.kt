@@ -9,6 +9,7 @@ import androidx.navigation.toRoute
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
 import dk.dtu.padelbattle.view.HomeScreen
+import dk.dtu.padelbattle.view.SearchScreen
 import dk.dtu.padelbattle.view.TournamentConfigScreen
 import dk.dtu.padelbattle.view.TournamentViewScreen
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
@@ -56,6 +57,30 @@ fun NavigationGraph(
                 },
                 onDuplicateTournament = { tournamentType, tournamentId ->
                     // Navigate to TournamentConfig with duplication parameters
+                    navController.navigate(
+                        TournamentConfig(
+                            tournamentType = tournamentType,
+                            duplicateFromId = tournamentId
+                        )
+                    )
+                },
+                onGoToSearchScreen = {
+                    navController.navigate(SearchTournament)
+                }
+            )
+        }
+
+        composable<SearchTournament> {
+            SearchScreen(
+                viewModel = homeViewModel,
+                onTournamentClicked = { tournamentId ->
+                    val tournament = homeViewModel.tournaments.value.find { it.id == tournamentId }
+                    if (tournament != null) {
+                        tournamentViewModel.setTournament(tournament)
+                        navController.navigate(TournamentView(tournamentName = tournament.name))
+                    }
+                },
+                onDuplicateTournament = { tournamentType, tournamentId ->
                     navController.navigate(
                         TournamentConfig(
                             tournamentType = tournamentType,

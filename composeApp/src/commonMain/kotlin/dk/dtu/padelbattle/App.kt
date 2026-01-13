@@ -54,7 +54,13 @@ fun App(
             database.matchDao()
         )
     }
-    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel(database.tournamentDao()) }
+    val tournamentViewModel: TournamentViewModel = viewModel {
+        TournamentViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
+    }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
     val matchEditViewModel: MatchEditViewModel = viewModel {
         MatchEditViewModel(

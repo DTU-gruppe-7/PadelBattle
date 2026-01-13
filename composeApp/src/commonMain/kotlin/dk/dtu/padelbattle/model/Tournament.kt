@@ -49,12 +49,36 @@ class Tournament(
                 generateMinimalAmericanoTournament()
                 true
             }
-            TournamentType.MEXICANO -> false
+            TournamentType.MEXICANO -> {
+                generateMexicanoRound(roundNumber = 1, isFirstRound = true)
+                true
+            }
         }
+    }
+
+    /**
+     * Tjekker om Mexicano-kriterierne for afslutning er mødt.
+     * Reglen: Alle skal have spillet mindst [minMatches] kampe.
+     */
+    fun isMexicanoFinished(minMatches: Int = 3): Boolean {
+        // Hvis der er kampe der mangler at blive spillet, er vi ikke færdige
+        if (matches.any { !it.isPlayed }) return false
+
+        rebuildTrackingFromMatches() // Sikr at vores tællere er opdaterede
+
+        // Tjek det laveste antal kampe nogen spiller har spillet
+        val minPlayed = matchCount.values.minOrNull() ?: 0
+
+        return minPlayed >= minMatches
     }
 
     fun extendTournament(): Boolean {
         if (!validatePlayerCount()) return false
+
+        // VIGTIGT: Når vi henter fra DB, er tracking data nulstillet.
+        // Vi skal genopbygge historikken før vi kan lave nye kampe.
+        rebuildTrackingFromMatches()
+
         if (matches.isEmpty()) return startTournament()
 
         return when (type) {
@@ -62,7 +86,60 @@ class Tournament(
                 extendAmericanoTournament()
                 true
             }
-            TournamentType.MEXICANO -> false
+            TournamentType.MEXICANO -> {
+                // Tjek at sidste runde er færdigspillet
+                val lastRoundNumber = matches.maxOfOrNull { it.roundNumber } ?: 0
+                val unfinishedMatches = matches.filter {
+                    it.roundNumber == lastRoundNumber && !it.isPlayed
+                }
+
+                if (unfinishedMatches.isNotEmpty()) {
+                    return false // Kan ikke lave ny runde før pointene er givet
+                }
+
+                // Generer næste runde (isFirstRound = false)
+                generateMexicanoRound(lastRoundNumber + 1, isFirstRound = false)
+                true
+            }
+        }
+    }
+
+    // Husk at sikre dig, at generateMexicanoRound bruger "1+3 vs 2+4" logikken fra før:
+    private fun generateMexicanoRound(roundNumber: Int, isFirstRound: Boolean) {
+        val courts = getEffectiveCourts()
+        val playersNeeded = courts * 4
+
+        var activePlayers = selectActivePlayersForRound(playersNeeded, roundNumber)
+        if (activePlayers.size < 4) return
+
+        activePlayers = if (isFirstRound) {
+            activePlayers.shuffled()
+        } else {
+            // Sorter efter point (højest først), derefter tilfældigt
+            activePlayers.sortedWith(
+                compareByDescending<Player> { it.totalPoints }
+                    .thenBy { Random.nextInt() }
+            )
+        }
+
+        for (i in 0 until courts) {
+            val baseIdx = i * 4
+            if (baseIdx + 4 <= activePlayers.size) {
+                val p1 = activePlayers[baseIdx]
+                val p2 = activePlayers[baseIdx + 1]
+                val p3 = activePlayers[baseIdx + 2]
+                val p4 = activePlayers[baseIdx + 3]
+
+                // Regel: 1+3 mod 2+4
+                val match = Match(
+                    roundNumber = roundNumber,
+                    courtNumber = i + 1,
+                    team1Player1 = p1, team1Player2 = p3,
+                    team2Player1 = p2, team2Player2 = p4
+                )
+                matches.add(match)
+                updateTracking(match, roundNumber)
+            }
         }
     }
 
@@ -90,19 +167,26 @@ class Tournament(
     private fun rebuildTrackingFromMatches() {
         resetTrackingData()
 
+        // Kun tæl spillede kampe for matchCount (bruges til at afgøre om turneringen er færdig)
+        // Men registrer alle kampe for opponents og partners (bruges til at undgå gentagelser)
         matches.forEach { match ->
             val t1p1 = match.team1Player1
             val t1p2 = match.team1Player2
             val t2p1 = match.team2Player1
             val t2p2 = match.team2Player2
 
+            // Registrer opponents og partners for alle kampe (også uafspillede)
+            // så vi undgår at lave de samme par igen
             recordOpponents(t1p1, t1p2, t2p1, t2p2)
             recordPartners(t1p1, t1p2)
             recordPartners(t2p1, t2p2)
 
-            listOf(t1p1, t1p2, t2p1, t2p2).forEach { player ->
-                matchCount[player.id] = (matchCount[player.id] ?: 0) + 1
-                lastPlayedRound[player.id] = match.roundNumber
+            // Kun tæl spillede kampe for matchCount og lastPlayedRound
+            if (match.isPlayed) {
+                listOf(t1p1, t1p2, t2p1, t2p2).forEach { player ->
+                    matchCount[player.id] = (matchCount[player.id] ?: 0) + 1
+                    lastPlayedRound[player.id] = match.roundNumber
+                }
             }
         }
     }

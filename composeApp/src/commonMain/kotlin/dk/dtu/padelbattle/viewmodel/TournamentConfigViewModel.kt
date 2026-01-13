@@ -136,7 +136,7 @@ class TournamentConfigViewModel(
     }
 
     fun reset() {
-        _tournamentName.value = "Turnering"
+        _tournamentName.value = ""
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
         _numberOfCourts.value = 1

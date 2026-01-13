@@ -6,6 +6,7 @@ import dk.dtu.padelbattle.model.Player
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
@@ -66,6 +67,50 @@ class StandingsViewModel : ViewModel() {
     fun setPlayers(players: List<Player>, pointsPerMatch: Int = 16) {
         _pointsPerMatch.value = pointsPerMatch
         _players.value = players
+    }
+
+    // ==================== Player Name Editing ====================
+
+    private val _editingPlayer = MutableStateFlow<Player?>(null)
+    val editingPlayer: StateFlow<Player?> = _editingPlayer.asStateFlow()
+
+    private val _editingName = MutableStateFlow("")
+    val editingName: StateFlow<String> = _editingName.asStateFlow()
+
+    /**
+     * Start redigering af en spillers navn.
+     */
+    fun startEditingPlayer(player: Player) {
+        _editingPlayer.value = player
+        _editingName.value = player.name
+    }
+
+    /**
+     * Opdater det indtastede navn.
+     */
+    fun updateEditingName(name: String) {
+        _editingName.value = name
+    }
+
+    /**
+     * Annuller redigering.
+     */
+    fun cancelEditing() {
+        _editingPlayer.value = null
+        _editingName.value = ""
+    }
+
+    /**
+     * Gem det nye navn.
+     * @param onSave callback der kaldes med spilleren og det nye navn - bruges til at persistere ændringen.
+     */
+    fun savePlayerName(onSave: (Player, String) -> Unit) {
+        val player = _editingPlayer.value ?: return
+        val newName = _editingName.value.trim()
+        if (newName.isNotBlank()) {
+            onSave(player, newName)
+        }
+        cancelEditing()
     }
 
 }

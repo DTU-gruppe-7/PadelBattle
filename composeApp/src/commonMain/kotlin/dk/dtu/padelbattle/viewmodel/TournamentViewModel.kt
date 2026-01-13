@@ -7,7 +7,6 @@ import dk.dtu.padelbattle.data.dao.PlayerDao
 import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.data.mapper.loadFullTournamentFromDao
 import dk.dtu.padelbattle.data.mapper.toEntity
-import dk.dtu.padelbattle.data.entity.PlayerEntity
 import dk.dtu.padelbattle.model.MexicanoExtensionTracker
 import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.model.Tournament
@@ -130,20 +129,9 @@ class TournamentViewModel(
                     if (match.team2Player2.id == player.id) match.team2Player2.name = newName
                 }
                 
-                // 3. Gem til database
+                // 3. Gem til database (bruger toEntity mapper fra TournamentMapper)
                 playerInList?.let { p ->
-                    playerDao.updatePlayer(
-                        PlayerEntity(
-                            id = p.id,
-                            tournamentId = currentTournament.id,
-                            name = p.name,
-                            totalPoints = p.totalPoints,
-                            gamesPlayed = p.gamesPlayed,
-                            wins = p.wins,
-                            losses = p.losses,
-                            draws = p.draws
-                        )
-                    )
+                    playerDao.updatePlayer(p.toEntity(currentTournament.id))
                 }
                 
                 // 4. Trigger UI opdatering

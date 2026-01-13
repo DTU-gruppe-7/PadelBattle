@@ -193,7 +193,7 @@ fun TournamentConfigScreen(
                 )
                 IconButton(
                     onClick = { viewModel.addPlayer() },
-                    enabled = currentPlayerName.isNotBlank() && playerNames.size < 16
+                    enabled = currentPlayerName.isNotBlank() && playerNames.size < Tournament.MAX_PLAYERS
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Tilføj spiller")
                 }
@@ -201,8 +201,8 @@ fun TournamentConfigScreen(
 
             Text(
                 text = when {
-                    playerNames.size < 4 -> "Mindst 4 spillere kræves (${playerNames.size}/4)"
-                    playerNames.size >= 16 -> "Maksimum 16 spillere nået"
+                    playerNames.size < Tournament.MIN_PLAYERS -> "Mindst ${Tournament.MIN_PLAYERS} spillere kræves (${playerNames.size}/${Tournament.MIN_PLAYERS})"
+                    playerNames.size >= Tournament.MAX_PLAYERS -> "Maksimum ${Tournament.MAX_PLAYERS} spillere nået"
                     else -> "${playerNames.size} spillere tilføjet"
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -275,7 +275,7 @@ fun TournamentConfigScreen(
                 title = "Antal Baner",
                 currentValue = numberOfCourts,
                 minValue = 1,
-                maxValue = 4,
+                maxValue = Tournament.MAX_COURTS,
                 onValueChange = { viewModel.updateNumberOfCourts(it) },
                 onDismiss = { showCourtsDialog = false }
             )

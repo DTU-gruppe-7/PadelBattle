@@ -54,7 +54,28 @@ class SettingsViewModel(
     private val _pendingPointsChange = MutableStateFlow<Int?>(null)
     val pendingPointsChange: StateFlow<Int?> = _pendingPointsChange.asStateFlow()
 
-    // 2. Lav en funktion, så App.kt kan "injecte" handlingen
+    /**
+     * Rydder alle callbacks og referencer for at undgå memory leaks.
+     */
+    override fun onCleared() {
+        super.onCleared()
+        clearCallbacks()
+    }
+
+    /**
+     * Rydder alle callbacks - kaldes ved navigation væk eller ViewModel cleanup.
+     */
+    fun clearCallbacks() {
+        deleteAction = null
+        duplicateAction = null
+        currentTournament = null
+        onTournamentUpdated = null
+    }
+
+    /**
+     * Sætter callback-funktionen for at slette en turnering.
+     * VIGTIGT: Kald clearCallbacks() når komponenten unmountes for at undgå memory leaks.
+     */
     fun setOnDeleteTournament(action: () -> Unit) {
         deleteAction = action
     }
@@ -62,6 +83,7 @@ class SettingsViewModel(
     /**
      * Sætter callback-funktionen for at duplikere en turnering.
      * Bruges til at navigere til TournamentConfigScreen med duplicate-parametrene.
+     * VIGTIGT: Kald clearCallbacks() når komponenten unmountes for at undgå memory leaks.
      */
     fun setOnDuplicateTournament(action: () -> Unit) {
         duplicateAction = action

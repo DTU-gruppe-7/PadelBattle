@@ -77,8 +77,9 @@ fun App(
     MaterialTheme {
         val navController = rememberNavController()
 
-        LaunchedEffect(Unit) {
-
+        // Sæt delete callback - denne opdateres når navController ændres
+        // Bruger DisposableEffect for at sikre cleanup ved unmount
+        androidx.compose.runtime.DisposableEffect(navController) {
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -86,6 +87,11 @@ fun App(
                         navController.popBackStack()
                     }
                 )
+            }
+
+            onDispose {
+                // Ryd callbacks for at undgå memory leaks
+                settingsViewModel.clearCallbacks()
             }
         }
 

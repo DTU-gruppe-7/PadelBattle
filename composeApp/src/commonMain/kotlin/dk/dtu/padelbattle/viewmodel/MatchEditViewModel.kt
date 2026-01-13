@@ -151,14 +151,18 @@ class MatchEditViewModel(
                     println("Kampe per spiller: $matchesPerPlayer")
 
                     val minMatchesPlayed = matchesPerPlayer.values.minOrNull() ?: 0
-                    println("Minimum kampe spillet af nogen spiller: $minMatchesPlayed")
+                    val maxMatchesPlayed = matchesPerPlayer.values.maxOrNull() ?: 0
+                    val allHaveEqualMatches = minMatchesPlayed == maxMatchesPlayed
+                    
+                    println("Minimum kampe spillet: $minMatchesPlayed, Maximum: $maxMatchesPlayed")
+                    println("Alle har lige mange kampe: $allHaveEqualMatches")
 
-                    // Tjek om alle har spillet min. 3 kampe
-                    if (minMatchesPlayed >= 3) {
-                        println("Alle spillere har spillet mindst 3 kampe - turneringen er færdig!")
+                    // Tjek om alle har spillet min. 3 kampe OG alle har lige mange kampe
+                    if (minMatchesPlayed >= 3 && allHaveEqualMatches) {
+                        println("Alle spillere har spillet mindst 3 kampe og alle har lige mange - turneringen er færdig!")
                         isCompleted = true
                     } else {
-                        println("Ikke alle har spillet 3 kampe endnu - genererer ny runde...")
+                        println("Turneringen fortsætter - genererer ny runde...")
                         // Generer næste runde automatisk
                         val addedNewRound = tournament.extendTournament()
 

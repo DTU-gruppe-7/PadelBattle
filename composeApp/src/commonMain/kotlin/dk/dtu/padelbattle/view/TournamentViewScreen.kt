@@ -70,6 +70,7 @@ fun TournamentViewScreen(
                 1 -> StandingsScreen(
                     players = tournament?.players ?: emptyList(),
                     viewModel = standingsViewModel,
+                    pointsPerMatch = tournament?.pointsPerMatch ?: 16,
                     revision = revision
                 )
             }

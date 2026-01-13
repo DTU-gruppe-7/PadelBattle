@@ -24,18 +24,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Player
+import dk.dtu.padelbattle.viewmodel.PlayerStanding
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 
 @Composable
 fun StandingsScreen(
     players: List<Player>,
     viewModel: StandingsViewModel,
+    pointsPerMatch: Int = 16,
     revision: Int = 0
 ) {
     // Opdater viewModel med spillere når de ændres - lav en ny liste med kopierede objekter for at trigger StateFlow
     // Brug revision som key for at sikre opdatering når kampe opdateres
-    LaunchedEffect(players, revision) {
-        viewModel.setPlayers(players.map { it.copy() })
+    LaunchedEffect(players, revision, pointsPerMatch) {
+        viewModel.setPlayers(players.map { it.copy() }, pointsPerMatch)
     }
 
     // Hent sorterede spillere fra viewModel StateFlow - opdateres automatisk
@@ -77,21 +79,28 @@ fun StandingsScreen(
                     text = "W-L-D",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1.2f),
+                    modifier = Modifier.weight(1.0f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "+Bonus",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(0.8f),
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = "Diff",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(0.8f),
+                    modifier = Modifier.weight(0.6f),
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "Point",
+                    text = "Total",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(0.8f),
+                    modifier = Modifier.weight(0.7f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -103,14 +112,14 @@ fun StandingsScreen(
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val leaderPoints = sortedPlayers.firstOrNull()?.totalPoints ?: 0
+            val leaderTotal = sortedPlayers.firstOrNull()?.displayTotal ?: 0
 
             items(sortedPlayers.size) { index ->
-                val player = sortedPlayers[index]
+                val standing = sortedPlayers[index]
                 StandingRow(
-                    player = player,
+                    standing = standing,
                     position = index + 1,
-                    leaderPoints = leaderPoints
+                    leaderTotal = leaderTotal
                 )
             }
         }
@@ -119,11 +128,12 @@ fun StandingsScreen(
 
 @Composable
 private fun StandingRow(
-    player: Player,
+    standing: PlayerStanding,
     position: Int,
-    leaderPoints: Int
+    leaderTotal: Int
 ) {
-    val difference = player.totalPoints - leaderPoints
+    val player = standing.player
+    val difference = standing.displayTotal - leaderTotal
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -181,7 +191,17 @@ private fun StandingRow(
             Text(
                 text = "${player.wins}-${player.losses}-${player.draws}",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1.2f),
+                modifier = Modifier.weight(1.0f),
+                textAlign = TextAlign.Center
+            )
+
+            // Bonus points (vises kun hvis der er bonus)
+            Text(
+                text = if (standing.bonusPoints > 0) "+${standing.bonusPoints}" else "-",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (standing.bonusPoints > 0) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (standing.bonusPoints > 0) FontWeight.Bold else FontWeight.Normal,
+                modifier = Modifier.weight(0.8f),
                 textAlign = TextAlign.Center
             )
 
@@ -193,17 +213,17 @@ private fun StandingRow(
                     position == 1 -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.error
                 },
-                modifier = Modifier.weight(0.8f),
+                modifier = Modifier.weight(0.6f),
                 textAlign = TextAlign.Center
             )
 
-            // Total points
+            // Total points (inkl. bonus)
             Text(
-                text = player.totalPoints.toString(),
+                text = standing.displayTotal.toString(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(0.8f),
+                modifier = Modifier.weight(0.7f),
                 textAlign = TextAlign.Center
             )
         }

@@ -16,15 +16,28 @@ class Tournament(
 ) {
 
     // --- TRACKING DATA ---
-    private val playedAgainst = mutableMapOf<String, MutableList<String>>()
     private val partnerCount = mutableMapOf<Set<String>, Int>()
+    private val opponentCountGlobal = mutableMapOf<Set<String>, Int>()
     private val matchCount = mutableMapOf<String, Int>()
     // Tracker hvornår spilleren sidst spillede (lavere = længere siden)
     private val lastPlayedRound = mutableMapOf<String, Int>()
+    // Cache for hurtig spiller-opslag
+    private val playerById: Map<String, Player> get() = players.associateBy { it.id }
+    
+    // Hjælpefunktion til konsistent par-nøgle
+    private fun pairKey(id1: String, id2: String): Set<String> = setOf(id1, id2)
 
     // --- PUBLIC API ---
 
-    fun getMaxCourts(): Int = (players.size / 4).coerceAtLeast(1)
+    fun getMaxCourts(): Int = (players.size / 4).coerceIn(1, MAX_COURTS)
+
+    companion object {
+        const val MAX_COURTS = 8
+        const val MAX_PLAYERS = 32
+        const val MIN_PLAYERS = 4
+        /** Maksimalt antal kampe per spiller ved initial turneringsgenerering */
+        const val MAX_MATCHES_PER_PLAYER = 8
+    }
 
     /**
      * Tjekker om der er nogle kampe der allerede er blevet spillet.
@@ -49,12 +62,38 @@ class Tournament(
                 generateMinimalAmericanoTournament()
                 true
             }
-            TournamentType.MEXICANO -> false
+            TournamentType.MEXICANO -> {
+                generateMexicanoRound(roundNumber = 1, isFirstRound = true)
+                true
+            }
         }
+    }
+
+    /**
+     * Tjekker om Mexicano-kriterierne for afslutning er mødt.
+     * Reglen: Alle skal have spillet mindst [minMatches] kampe OG alle skal have lige mange kampe.
+     */
+    fun isMexicanoFinished(minMatches: Int = 3): Boolean {
+        // Hvis der er kampe der mangler at blive spillet, er vi ikke færdige
+        if (matches.any { !it.isPlayed }) return false
+
+        rebuildTrackingFromMatches() // Sikr at vores tællere er opdaterede
+
+        // Tjek det laveste og højeste antal kampe
+        val minPlayed = matchCount.values.minOrNull() ?: 0
+        val maxPlayed = matchCount.values.maxOrNull() ?: 0
+        
+        // Alle skal have spillet mindst minMatches OG alle skal have lige mange kampe
+        return minPlayed >= minMatches && minPlayed == maxPlayed
     }
 
     fun extendTournament(): Boolean {
         if (!validatePlayerCount()) return false
+
+        // VIGTIGT: Når vi henter fra DB, er tracking data nulstillet.
+        // Vi skal genopbygge historikken før vi kan lave nye kampe.
+        rebuildTrackingFromMatches()
+
         if (matches.isEmpty()) return startTournament()
 
         return when (type) {
@@ -62,26 +101,78 @@ class Tournament(
                 extendAmericanoTournament()
                 true
             }
-            TournamentType.MEXICANO -> false
+            TournamentType.MEXICANO -> {
+                // Tjek at sidste runde er færdigspillet
+                val lastRoundNumber = matches.maxOfOrNull { it.roundNumber } ?: 0
+                val unfinishedMatches = matches.filter {
+                    it.roundNumber == lastRoundNumber && !it.isPlayed
+                }
+
+                if (unfinishedMatches.isNotEmpty()) {
+                    return false // Kan ikke lave ny runde før pointene er givet
+                }
+
+                // Generer næste runde (isFirstRound = false)
+                generateMexicanoRound(lastRoundNumber + 1, isFirstRound = false)
+                true
+            }
+        }
+    }
+
+    // Husk at sikre dig, at generateMexicanoRound bruger "1+3 vs 2+4" logikken fra før:
+    private fun generateMexicanoRound(roundNumber: Int, isFirstRound: Boolean) {
+        val courts = getEffectiveCourts()
+        val playersNeeded = courts * 4
+
+        var activePlayers = selectActivePlayersForRound(playersNeeded, roundNumber)
+        if (activePlayers.size < 4) return
+
+        activePlayers = if (isFirstRound) {
+            activePlayers.shuffled()
+        } else {
+            // Sorter efter point (højest først), derefter tilfældigt
+            activePlayers.sortedWith(
+                compareByDescending<Player> { it.totalPoints }
+                    .thenBy { Random.nextInt() }
+            )
+        }
+
+        for (i in 0 until courts) {
+            val baseIdx = i * 4
+            if (baseIdx + 4 <= activePlayers.size) {
+                val p1 = activePlayers[baseIdx]
+                val p2 = activePlayers[baseIdx + 1]
+                val p3 = activePlayers[baseIdx + 2]
+                val p4 = activePlayers[baseIdx + 3]
+
+                // Regel: 1+3 mod 2+4
+                val match = Match(
+                    roundNumber = roundNumber,
+                    courtNumber = i + 1,
+                    team1Player1 = p1, team1Player2 = p3,
+                    team2Player1 = p2, team2Player2 = p4
+                )
+                matches.add(match)
+                updateTracking(match, roundNumber)
+            }
         }
     }
 
     // --- PRIVATE HELPERS ---
 
     private fun validatePlayerCount(): Boolean {
-        if (players.size < 4) throw IllegalStateException("Fejl: Der skal være mindst 4 spillere.")
-        if (players.size > 16) throw IllegalStateException("Fejl: Maksimalt 16 spillere understøttes.")
+        if (players.size < MIN_PLAYERS) throw IllegalStateException("Fejl: Der skal være mindst $MIN_PLAYERS spillere.")
+        if (players.size > MAX_PLAYERS) throw IllegalStateException("Fejl: Maksimalt $MAX_PLAYERS spillere understøttes.")
         return true
     }
 
     private fun resetTrackingData() {
-        playedAgainst.clear()
         partnerCount.clear()
+        opponentCountGlobal.clear()
         matchCount.clear()
         lastPlayedRound.clear()
 
         players.forEach { player ->
-            playedAgainst[player.id] = mutableListOf()
             matchCount[player.id] = 0
             lastPlayedRound[player.id] = 0
         }
@@ -90,35 +181,42 @@ class Tournament(
     private fun rebuildTrackingFromMatches() {
         resetTrackingData()
 
+        // Registrer alle kampe for tracking data
         matches.forEach { match ->
             val t1p1 = match.team1Player1
             val t1p2 = match.team1Player2
             val t2p1 = match.team2Player1
             val t2p2 = match.team2Player2
 
+            // Registrer opponents og partners for alle kampe (også uafspillede)
             recordOpponents(t1p1, t1p2, t2p1, t2p2)
             recordPartners(t1p1, t1p2)
             recordPartners(t2p1, t2p2)
 
-            listOf(t1p1, t1p2, t2p1, t2p2).forEach { player ->
-                matchCount[player.id] = (matchCount[player.id] ?: 0) + 1
-                lastPlayedRound[player.id] = match.roundNumber
+            // Kun tæl spillede kampe for matchCount og lastPlayedRound
+            if (match.isPlayed) {
+                listOf(t1p1, t1p2, t2p1, t2p2).forEach { player ->
+                    matchCount[player.id] = (matchCount[player.id] ?: 0) + 1
+                    lastPlayedRound[player.id] = match.roundNumber
+                }
             }
         }
     }
 
     private fun recordOpponents(t1p1: Player, t1p2: Player, t2p1: Player, t2p2: Player) {
-        for (p1 in listOf(t1p1, t1p2)) {
-            for (p2 in listOf(t2p1, t2p2)) {
-                playedAgainst[p1.id]?.add(p2.id)
-                playedAgainst[p2.id]?.add(p1.id)
+        val team1 = listOf(t1p1, t1p2)
+        val team2 = listOf(t2p1, t2p2)
+        for (p1 in team1) {
+            for (p2 in team2) {
+                val key = pairKey(p1.id, p2.id)
+                opponentCountGlobal[key] = (opponentCountGlobal[key] ?: 0) + 1
             }
         }
     }
 
     private fun recordPartners(p1: Player, p2: Player) {
-        val pair = setOf(p1.id, p2.id)
-        partnerCount[pair] = (partnerCount[pair] ?: 0) + 1
+        val key = pairKey(p1.id, p2.id)
+        partnerCount[key] = (partnerCount[key] ?: 0) + 1
     }
 
     private fun allPlayersHaveEqualMatches(): Boolean {
@@ -130,68 +228,427 @@ class Tournament(
     // --- MINIMAL AMERICANO ALGORITHM ---
 
     /**
-     * Genererer den mindst mulige turnering hvor:
-     * 1. Alle spillere har spillet sammen med alle andre mindst én gang
-     * 2. Alle spillere ender med samme antal kampe
-     * 3. Spillere der har siddet over længst tid prioriteres
+     * Genererer en turnering hvor:
+     * 1. Alle spillere får så mange forskellige makkere som muligt
+     * 2. Stopper når ENTEN alle har spillet med alle ELLER alle har spillet MAX_MATCHES_PER_PLAYER kampe
+     * 3. Modstandere varieres så meget som muligt
+     *
+     * Eksempler:
+     * - 8 spillere: Stopper efter 7 kampe/spiller (alle har spillet med alle)
+     * - 16 spillere: Stopper efter 8 kampe/spiller (max grænse)
+     * - 32 spillere: Stopper efter 8 kampe/spiller (max grænse)
      */
     private fun generateMinimalAmericanoTournament() {
+        // Track hvilke par der allerede har spillet sammen
+        val usedPartnerPairs = mutableSetOf<Set<String>>()
+        
+        // Generer alle mulige partnerpar for at tracke hvornår alle har spillet med alle
+        val allPossiblePairs = generateAllPairs()
+        val remainingPairs = allPossiblePairs.toMutableSet()
+        
+        // Track modstandere for at variere dem
+        val opponentCount = mutableMapOf<Set<String>, Int>()
+        
         val courts = getEffectiveCourts()
-        val playersPerRound = courts * 4
-
-        // Generer alle nødvendige partnerpar
-        val allRequiredPairs = generateAllPairs()
-        val remainingPairs = allRequiredPairs.toMutableSet()
-
-        var roundNumber = 0
-        val maxIterations = 500
-
-        // Fase 1: Dæk alle partnerpar med mindst mulige kampe
-        while (remainingPairs.isNotEmpty() && roundNumber < maxIterations) {
-            roundNumber++
-
-            // Vælg aktive spillere baseret på hvem der har siddet over længst
-            val activePlayers = selectActivePlayersForRound(playersPerRound, roundNumber)
-
-            if (activePlayers.size < 4) break
-
-            // Find optimale kampe der dækker flest mulige nye par
-            val roundMatches = findMatchesCoveringMostPairs(
+        
+        // Beregn hvor mange kampe hver spiller skal have
+        // Det er minimum af (spillere - 1) og MAX_MATCHES_PER_PLAYER
+        val targetMatchesPerPlayer = (players.size - 1).coerceAtMost(MAX_MATCHES_PER_PLAYER)
+        
+        val maxRounds = targetMatchesPerPlayer + 5 // Sikkerhedsmargin for balancering
+        
+        for (roundNumber in 1..maxRounds) {
+            // Stop-betingelse 1: Alle har spillet med alle
+            if (remainingPairs.isEmpty()) break
+            
+            // Stop-betingelse 2: Alle har nået target
+            val minMatches = matchCount.values.minOrNull() ?: 0
+            if (minMatches >= targetMatchesPerPlayer) break
+            
+            // Find spillere der kan spille flere kampe
+            val eligiblePlayers = players.filter { (matchCount[it.id] ?: 0) < targetMatchesPerPlayer }
+            if (eligiblePlayers.size < 4) break
+            
+            // Generer kampe for denne runde
+            val roundMatches = generateRoundMatches(
                 roundNumber = roundNumber,
-                activePlayers = activePlayers,
-                remainingPairs = remainingPairs
+                eligiblePlayers = eligiblePlayers,
+                usedPartnerPairs = usedPartnerPairs,
+                opponentCount = opponentCount,
+                maxMatches = courts
             )
-
-            if (roundMatches.isEmpty()) {
-                // Ingen gode kampe fundet, prøv med andre spillere
-                continue
-            }
-
+            
+            if (roundMatches.isEmpty()) break
+            
             matches.addAll(roundMatches)
             roundMatches.forEach { match ->
                 updateTracking(match, roundNumber)
-                remainingPairs.remove(setOf(match.team1Player1.id, match.team1Player2.id))
-                remainingPairs.remove(setOf(match.team2Player1.id, match.team2Player2.id))
+                val pair1 = pairKey(match.team1Player1.id, match.team1Player2.id)
+                val pair2 = pairKey(match.team2Player1.id, match.team2Player2.id)
+                usedPartnerPairs.add(pair1)
+                usedPartnerPairs.add(pair2)
+                remainingPairs.remove(pair1)
+                remainingPairs.remove(pair2)
+                updateOpponentCount(match, opponentCount)
             }
         }
 
-        // Fase 2: Balancer så alle har samme antal kampe
-        balanceMatchCounts(roundNumber)
+        // Fase 2: Balancer så alle har præcis samme antal kampe
+        balanceMatchCountsWithLimit(
+            startRoundNumber = matches.maxOfOrNull { it.roundNumber } ?: 0, 
+            opponentCount = opponentCount, 
+            usedPartnerPairs = usedPartnerPairs,
+            targetMatches = targetMatchesPerPlayer
+        )
+    }
+    
+    /**
+     * Genererer kampe for en runde med fokus på nye makkere og varierende modstandere.
+     */
+    private fun generateRoundMatches(
+        roundNumber: Int,
+        eligiblePlayers: List<Player>,
+        usedPartnerPairs: Set<Set<String>>,
+        opponentCount: Map<Set<String>, Int>,
+        maxMatches: Int
+    ): List<Match> {
+        val roundMatches = mutableListOf<Match>()
+        val usedInRound = mutableSetOf<String>()
+        
+        // Sorter spillere efter færrest kampe først
+        val sortedPlayers = eligiblePlayers
+            .filter { (matchCount[it.id] ?: 0) < MAX_MATCHES_PER_PLAYER }
+            .sortedBy { matchCount[it.id] ?: 0 }
+        
+        while (roundMatches.size < maxMatches) {
+            val available = sortedPlayers.filter { it.id !in usedInRound }
+            if (available.size < 4) break
+            
+            // Find det bedste sæt af 4 spillere for en kamp
+            val matchPlayers = findBestFourPlayers(
+                available = available,
+                usedPartnerPairs = usedPartnerPairs,
+                opponentCount = opponentCount
+            )
+            
+            if (matchPlayers == null) break
+            
+            val (p1, p2, p3, p4) = matchPlayers
+            
+            val match = Match(
+                roundNumber = roundNumber,
+                courtNumber = roundMatches.size + 1,
+                team1Player1 = p1,
+                team1Player2 = p2,
+                team2Player1 = p3,
+                team2Player2 = p4
+            )
+            
+            roundMatches.add(match)
+            usedInRound.addAll(listOf(p1.id, p2.id, p3.id, p4.id))
+        }
+        
+        return roundMatches
+    }
+    
+    /**
+     * Finder de bedste 4 spillere til en kamp.
+     * Returnerer (team1Player1, team1Player2, team2Player1, team2Player2)
+     */
+    private fun findBestFourPlayers(
+        available: List<Player>,
+        usedPartnerPairs: Set<Set<String>>,
+        opponentCount: Map<Set<String>, Int>
+    ): List<Player>? {
+        if (available.size < 4) return null
+        
+        var bestConfig: List<Player>? = null
+        var bestScore = Int.MAX_VALUE
+        
+        // Tag de første 8 spillere (for at begrænse søgning)
+        val candidates = available.take(8.coerceAtMost(available.size))
+        
+        // Prøv alle kombinationer af 4 spillere
+        for (i in candidates.indices) {
+            for (j in i + 1 until candidates.size) {
+                for (k in j + 1 until candidates.size) {
+                    for (l in k + 1 until candidates.size) {
+                        val four = listOf(candidates[i], candidates[j], candidates[k], candidates[l])
+                        
+                        // Find den bedste holdfordeling for disse 4
+                        val bestTeamConfig = findBestTeamConfiguration(four, usedPartnerPairs, opponentCount)
+                        
+                        if (bestTeamConfig.second < bestScore) {
+                            bestScore = bestTeamConfig.second
+                            bestConfig = bestTeamConfig.first
+                        }
+                    }
+                }
+            }
+        }
+        
+        return bestConfig
+    }
+    
+    /**
+     * Finder den bedste holdfordeling for 4 spillere.
+     * Returnerer (konfiguration, score) hvor lavere score er bedre.
+     */
+    private fun findBestTeamConfiguration(
+        fourPlayers: List<Player>,
+        usedPartnerPairs: Set<Set<String>>,
+        opponentCount: Map<Set<String>, Int>
+    ): Pair<List<Player>, Int> {
+        var bestConfig = fourPlayers
+        var bestScore = Int.MAX_VALUE
+        
+        // Prøv alle 3 mulige holdfordelinger
+        val configs = listOf(
+            listOf(0, 1, 2, 3), // (0,1) vs (2,3)
+            listOf(0, 2, 1, 3), // (0,2) vs (1,3)
+            listOf(0, 3, 1, 2)  // (0,3) vs (1,2)
+        )
+        
+        for (config in configs) {
+            val p1 = fourPlayers[config[0]]
+            val p2 = fourPlayers[config[1]]
+            val p3 = fourPlayers[config[2]]
+            val p4 = fourPlayers[config[3]]
+            
+            var score = 0
+            
+            // Stor straf for gentagne partnerskaber
+            val pair12 = pairKey(p1.id, p2.id)
+            val pair34 = pairKey(p3.id, p4.id)
+            if (pair12 in usedPartnerPairs) score += 10000
+            if (pair34 in usedPartnerPairs) score += 10000
+            
+            // Mindre straf for gentagne modstandere
+            score += (opponentCount[pairKey(p1.id, p3.id)] ?: 0) * 100
+            score += (opponentCount[pairKey(p1.id, p4.id)] ?: 0) * 100
+            score += (opponentCount[pairKey(p2.id, p3.id)] ?: 0) * 100
+            score += (opponentCount[pairKey(p2.id, p4.id)] ?: 0) * 100
+            
+            // Lille bonus for at balancere kampantal
+            score += (matchCount[p1.id] ?: 0) + (matchCount[p2.id] ?: 0) +
+                     (matchCount[p3.id] ?: 0) + (matchCount[p4.id] ?: 0)
+            
+            if (score < bestScore) {
+                bestScore = score
+                bestConfig = listOf(p1, p2, p3, p4)
+            }
+        }
+        
+        return Pair(bestConfig, bestScore)
+    }
+    
+    /**
+     * Balancerer kampantal så alle har præcis targetMatches kampe.
+     */
+    private fun balanceMatchCountsWithLimit(
+        startRoundNumber: Int, 
+        opponentCount: MutableMap<Set<String>, Int>,
+        usedPartnerPairs: MutableSet<Set<String>>,
+        targetMatches: Int
+    ) {
+        var roundNumber = startRoundNumber
+        val maxIterations = 10
+        var iterations = 0
+        
+        while (!allPlayersHaveEqualMatches() && iterations < maxIterations) {
+            iterations++
+            
+            val maxMatches = (matchCount.values.maxOrNull() ?: 0).coerceAtMost(targetMatches)
+            
+            // Find spillere der har færre kampe end max
+            val playersNeedingMatches = players
+                .filter { 
+                    val count = matchCount[it.id] ?: 0
+                    count < maxMatches && count < targetMatches
+                }
+                .sortedBy { matchCount[it.id] ?: 0 }
+            
+            if (playersNeedingMatches.size < 4) break
+            
+            roundNumber++
+            val courts = getEffectiveCourts()
+            val matchesToCreate = (playersNeedingMatches.size / 4).coerceIn(1, courts)
+            
+            val usedInRound = mutableSetOf<String>()
+            for (m in 0 until matchesToCreate) {
+                val available = playersNeedingMatches.filter { it.id !in usedInRound }
+                if (available.size < 4) break
+                
+                val fourPlayers = available.take(4)
+                val (config, _) = findBestTeamConfiguration(fourPlayers, usedPartnerPairs, opponentCount)
+                
+                val match = Match(
+                    roundNumber = roundNumber,
+                    courtNumber = m + 1,
+                    team1Player1 = config[0],
+                    team1Player2 = config[1],
+                    team2Player1 = config[2],
+                    team2Player2 = config[3]
+                )
+                
+                matches.add(match)
+                updateTracking(match, roundNumber)
+                usedPartnerPairs.add(pairKey(config[0].id, config[1].id))
+                usedPartnerPairs.add(pairKey(config[2].id, config[3].id))
+                updateOpponentCount(match, opponentCount)
+                fourPlayers.forEach { usedInRound.add(it.id) }
+            }
+        }
+    }
+    
+    /**
+     * Opdaterer modstander-tælleren for en kamp.
+     */
+    private fun updateOpponentCount(match: Match, opponentCount: MutableMap<Set<String>, Int>) {
+        val team1 = listOf(match.team1Player1, match.team1Player2)
+        val team2 = listOf(match.team2Player1, match.team2Player2)
+        
+        for (p1 in team1) {
+            for (p2 in team2) {
+                val key = pairKey(p1.id, p2.id)
+                opponentCount[key] = (opponentCount[key] ?: 0) + 1
+            }
+        }
+    }
+    
+    /**
+     * Balancerer kampantal så alle spillere har præcis samme antal kampe.
+     * Minimerer antallet af ekstra kampe der skal tilføjes.
+     */
+    private fun balanceMatchCountsOptimal(startRoundNumber: Int, opponentCount: MutableMap<Set<String>, Int>) {
+        var roundNumber = startRoundNumber
+        val maxIterations = 50
+        var iterations = 0
+        
+        while (!allPlayersHaveEqualMatches() && iterations < maxIterations) {
+            iterations++
+            
+            val maxMatches = matchCount.values.maxOrNull() ?: 0
+            val minMatches = matchCount.values.minOrNull() ?: 0
+            
+            // Find spillere der har færre kampe end max
+            val playersNeedingMatches = players
+                .filter { (matchCount[it.id] ?: 0) < maxMatches }
+                .sortedBy { matchCount[it.id] ?: 0 }
+            
+            if (playersNeedingMatches.size < 4) {
+                // Ikke nok spillere - vi må acceptere ubalance eller tilføje ekstra kampe
+                if (playersNeedingMatches.size >= 2) {
+                    // Find 2 andre spillere med mindst kampe blandt dem der allerede har max
+                    val fillerPlayers = players
+                        .filter { (matchCount[it.id] ?: 0) == maxMatches }
+                        .shuffled()
+                        .take(4 - playersNeedingMatches.size)
+                    
+                    val allPlayers = (playersNeedingMatches + fillerPlayers).take(4)
+                    if (allPlayers.size == 4) {
+                        roundNumber++
+                        val match = createBalancingMatch(roundNumber, allPlayers, opponentCount)
+                        matches.add(match)
+                        updateTracking(match, roundNumber)
+                        updateOpponentCount(match, opponentCount)
+                    }
+                }
+                break
+            }
+            
+            // Lav kampe med de spillere der har færrest kampe
+            roundNumber++
+            val courts = getEffectiveCourts()
+            val matchesToCreate = (playersNeedingMatches.size / 4).coerceIn(1, courts)
+            
+            val usedPlayers = mutableSetOf<String>()
+            for (m in 0 until matchesToCreate) {
+                val available = playersNeedingMatches.filter { it.id !in usedPlayers }.take(4)
+                if (available.size < 4) break
+                
+                val match = createBalancingMatch(roundNumber, available, opponentCount)
+                matches.add(match)
+                updateTracking(match, roundNumber)
+                updateOpponentCount(match, opponentCount)
+                available.forEach { usedPlayers.add(it.id) }
+            }
+        }
+    }
+    
+    /**
+     * Opretter en balancerings-kamp med optimal makker/modstander-fordeling.
+     */
+    private fun createBalancingMatch(
+        roundNumber: Int,
+        fourPlayers: List<Player>,
+        opponentCount: Map<Set<String>, Int>
+    ): Match {
+        // Find den bedste parring (mindst tidligere partnerskaber + mindst modstander-gentagelser)
+        var bestConfig: List<Player>? = null
+        var bestScore = Int.MAX_VALUE
+        
+        // Prøv alle mulige hold-kombinationer
+        val configs = listOf(
+            listOf(0, 1, 2, 3), // (0,1) vs (2,3)
+            listOf(0, 2, 1, 3), // (0,2) vs (1,3)
+            listOf(0, 3, 1, 2)  // (0,3) vs (1,2)
+        )
+        
+        for (config in configs) {
+            val p1 = fourPlayers[config[0]]
+            val p2 = fourPlayers[config[1]]
+            val p3 = fourPlayers[config[2]]
+            val p4 = fourPlayers[config[3]]
+            
+            var score = 0
+            
+            // Straf for gentagne partnerskaber
+            score += (partnerCount[pairKey(p1.id, p2.id)] ?: 0) * 1000
+            score += (partnerCount[pairKey(p3.id, p4.id)] ?: 0) * 1000
+            
+            // Straf for gentagne modstandere
+            score += (opponentCount[pairKey(p1.id, p3.id)] ?: 0) * 10
+            score += (opponentCount[pairKey(p1.id, p4.id)] ?: 0) * 10
+            score += (opponentCount[pairKey(p2.id, p3.id)] ?: 0) * 10
+            score += (opponentCount[pairKey(p2.id, p4.id)] ?: 0) * 10
+            
+            if (score < bestScore) {
+                bestScore = score
+                bestConfig = listOf(p1, p2, p3, p4)
+            }
+        }
+        
+        val selectedPlayers = bestConfig ?: fourPlayers
+        return Match(
+            roundNumber = roundNumber,
+            courtNumber = 1,
+            team1Player1 = selectedPlayers[0],
+            team1Player2 = selectedPlayers[1],
+            team2Player1 = selectedPlayers[2],
+            team2Player2 = selectedPlayers[3]
+        )
     }
 
     /**
-     * Udvider turneringen med flere runder, balanceret
+     * Udvider turneringen med flere runder, balanceret.
+     * Tilføjer kampe med varierende modstandere.
      */
     private fun extendAmericanoTournament() {
         rebuildTrackingFromMatches()
+        
+        // Rebuild opponent count from existing matches
+        val opponentCount = mutableMapOf<Set<String>, Int>()
+        matches.forEach { match ->
+            updateOpponentCount(match, opponentCount)
+        }
 
         val courts = getEffectiveCourts()
-        val playersPerRound = courts * 4
         var roundNumber = matches.maxOfOrNull { it.roundNumber } ?: 0
 
-        // Generer én ekstra runde for hver spiller (balanceret)
+        // Generer én ekstra runde for alle spillere
         val targetMatches = (matchCount.values.maxOrNull() ?: 0) + 1
-        val maxIterations = 100
+        val maxIterations = 20
         var iterations = 0
 
         while (iterations < maxIterations) {
@@ -201,24 +658,32 @@ class Tournament(
             roundNumber++
             iterations++
 
-            val activePlayers = selectActivePlayersForRound(playersPerRound, roundNumber)
-            if (activePlayers.size < 4) break
+            // Find spillere der har færrest kampe
+            val playersNeedingMatches = players
+                .filter { (matchCount[it.id] ?: 0) < targetMatches }
+                .sortedBy { matchCount[it.id] ?: 0 }
+                .take(courts * 4)
+            
+            if (playersNeedingMatches.size < 4) break
 
-            val roundMatches = findOptimalRoundConfiguration(
-                roundNumber = roundNumber,
-                activePlayers = activePlayers
-            )
-
-            if (roundMatches.isEmpty()) continue
-
-            matches.addAll(roundMatches)
-            roundMatches.forEach { match ->
+            // Lav kampe med disse spillere
+            val usedPlayers = mutableSetOf<String>()
+            val matchesToCreate = playersNeedingMatches.size / 4
+            
+            for (m in 0 until matchesToCreate) {
+                val available = playersNeedingMatches.filter { it.id !in usedPlayers }.take(4)
+                if (available.size < 4) break
+                
+                val match = createBalancingMatch(roundNumber, available, opponentCount)
+                matches.add(match)
                 updateTracking(match, roundNumber)
+                updateOpponentCount(match, opponentCount)
+                available.forEach { usedPlayers.add(it.id) }
             }
         }
 
         // Sørg for at alle har samme antal kampe
-        balanceMatchCounts(roundNumber)
+        balanceMatchCountsOptimal(roundNumber, opponentCount)
     }
 
     /**
@@ -250,219 +715,6 @@ class Tournament(
             .take(playersNeeded.coerceAtMost(players.size))
     }
 
-    /**
-     * Finder kampe der dækker flest mulige nye partnerpar
-     */
-    private fun findMatchesCoveringMostPairs(
-        roundNumber: Int,
-        activePlayers: List<Player>,
-        remainingPairs: Set<Set<String>>
-    ): List<Match> {
-        var bestMatches: List<Match> = emptyList()
-        var bestScore = Int.MIN_VALUE
-
-        fun backtrack(
-            remainingPlayers: MutableList<Player>,
-            currentMatches: List<Match>,
-            coveredNewPairs: Int
-        ) {
-            if (remainingPlayers.size < 4) {
-                if (coveredNewPairs > bestScore) {
-                    bestScore = coveredNewPairs
-                    bestMatches = currentMatches
-                }
-                return
-            }
-
-            val p1 = remainingPlayers[0]
-
-            for (i in 1 until remainingPlayers.size) {
-                val p2 = remainingPlayers[i]
-                val pair1 = setOf(p1.id, p2.id)
-                val pair1IsNew = pair1 in remainingPairs
-
-                for (j in 1 until remainingPlayers.size) {
-                    if (j == i) continue
-                    val p3 = remainingPlayers[j]
-
-                    for (k in j + 1 until remainingPlayers.size) {
-                        if (k == i) continue
-                        val p4 = remainingPlayers[k]
-
-                        val pair2 = setOf(p3.id, p4.id)
-                        val pair2IsNew = pair2 in remainingPairs
-
-                        val newPairsInMatch = (if (pair1IsNew) 1 else 0) + (if (pair2IsNew) 1 else 0)
-
-                        // Prioriter kampe med nye par
-                        if (currentMatches.isEmpty() && newPairsInMatch == 0) continue
-
-                        val nextRemaining = remainingPlayers.toMutableList().apply {
-                            removeAll(listOf(p1, p2, p3, p4))
-                        }
-
-                        val newMatch = Match(
-                            roundNumber = roundNumber,
-                            courtNumber = currentMatches.size + 1,
-                            team1Player1 = p1, team1Player2 = p2,
-                            team2Player1 = p3, team2Player2 = p4
-                        )
-
-                        backtrack(
-                            nextRemaining,
-                            currentMatches + newMatch,
-                            coveredNewPairs + newPairsInMatch
-                        )
-                    }
-                }
-            }
-        }
-
-        backtrack(activePlayers.shuffled().toMutableList(), emptyList(), 0)
-        return bestMatches
-    }
-
-    /**
-     * Balancerer så alle spillere har samme antal kampe
-     */
-    private fun balanceMatchCounts(startRoundNumber: Int) {
-        var roundNumber = startRoundNumber
-        val maxIterations = 100
-        var iterations = 0
-
-        while (!allPlayersHaveEqualMatches() && iterations < maxIterations) {
-            roundNumber++
-            iterations++
-
-            val minMatches = matchCount.values.minOrNull() ?: 0
-
-            // Find spillere der har færrest kampe
-            val playersNeedingMatches = players
-                .filter { (matchCount[it.id] ?: 0) == minMatches }
-                .sortedBy { lastPlayedRound[it.id] ?: 0 }
-
-            if (playersNeedingMatches.size < 4) {
-                // Tilføj spillere med næstfærrest kampe
-                val additionalPlayers = players
-                    .filter { (matchCount[it.id] ?: 0) == minMatches + 1 }
-                    .sortedBy { lastPlayedRound[it.id] ?: 0 }
-                    .take(4 - playersNeedingMatches.size)
-
-                val activePlayers = playersNeedingMatches + additionalPlayers
-                if (activePlayers.size < 4) break
-
-                val roundMatches = findOptimalRoundConfiguration(
-                    roundNumber = roundNumber,
-                    activePlayers = activePlayers.take(4)
-                )
-
-                if (roundMatches.isNotEmpty()) {
-                    matches.addAll(roundMatches)
-                    roundMatches.forEach { match ->
-                        updateTracking(match, roundNumber)
-                    }
-                }
-            } else {
-                // Lav kampe med kun de spillere der har færrest
-                val courts = getEffectiveCourts()
-                val playersToUse = playersNeedingMatches.take(courts * 4)
-
-                val roundMatches = findOptimalRoundConfiguration(
-                    roundNumber = roundNumber,
-                    activePlayers = playersToUse
-                )
-
-                if (roundMatches.isNotEmpty()) {
-                    matches.addAll(roundMatches)
-                    roundMatches.forEach { match ->
-                        updateTracking(match, roundNumber)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun findOptimalRoundConfiguration(
-        roundNumber: Int,
-        activePlayers: List<Player>
-    ): List<Match> {
-        if (activePlayers.size < 4) return emptyList()
-
-        var bestMatches: List<Match> = emptyList()
-        var minCost = Int.MAX_VALUE
-
-        fun backtrack(remainingPlayers: MutableList<Player>, currentMatches: List<Match>, currentCost: Int) {
-            if (currentCost >= minCost) return
-
-            if (remainingPlayers.size < 4) {
-                if (currentCost < minCost && currentMatches.isNotEmpty()) {
-                    minCost = currentCost
-                    bestMatches = currentMatches
-                }
-                return
-            }
-
-            val p1 = remainingPlayers[0]
-
-            for (i in 1 until remainingPlayers.size) {
-                val p2 = remainingPlayers[i]
-
-                val pairKey = setOf(p1.id, p2.id)
-                val partnersCount = partnerCount[pairKey] ?: 0
-                val partnerCost = partnersCount * partnersCount * 1000
-
-                for (j in 1 until remainingPlayers.size) {
-                    if (j == i) continue
-                    val p3 = remainingPlayers[j]
-
-                    for (k in j + 1 until remainingPlayers.size) {
-                        if (k == i) continue
-                        val p4 = remainingPlayers[k]
-
-                        val matchCost = partnerCost +
-                                calculatePairCost(p3, p4) +
-                                calculateOpponentCost(p1, p2, p3, p4)
-
-                        val nextRemaining = remainingPlayers.toMutableList().apply {
-                            removeAll(listOf(p1, p2, p3, p4))
-                        }
-
-                        val newMatch = Match(
-                            roundNumber = roundNumber,
-                            courtNumber = currentMatches.size + 1,
-                            team1Player1 = p1, team1Player2 = p2,
-                            team2Player1 = p3, team2Player2 = p4
-                        )
-
-                        backtrack(nextRemaining, currentMatches + newMatch, currentCost + matchCost)
-                        if (minCost == 0) return
-                    }
-                }
-            }
-        }
-
-        backtrack(activePlayers.shuffled().toMutableList(), emptyList(), 0)
-        return bestMatches
-    }
-
-    private fun calculatePairCost(p1: Player, p2: Player): Int {
-        val count = partnerCount[setOf(p1.id, p2.id)] ?: 0
-        return count * count * 1000
-    }
-
-    private fun calculateOpponentCost(t1p1: Player, t1p2: Player, t2p1: Player, t2p2: Player): Int {
-        var score = 0
-        val team1 = listOf(t1p1, t1p2)
-        val team2 = listOf(t2p1, t2p2)
-
-        for (p1 in team1) {
-            for (p2 in team2) {
-                val meetings = playedAgainst[p1.id]?.count { it == p2.id } ?: 0
-                score += meetings
-            }
-        }
-        return score
-    }
 
     private fun updateTracking(match: Match, roundNumber: Int) {
         val t1p1 = match.team1Player1
@@ -479,28 +731,13 @@ class Tournament(
         incrementPartner(t1p1, t1p2)
         incrementPartner(t2p1, t2p2)
 
-        listOf(t1p1, t1p2).forEach { p1 ->
-            listOf(t2p1, t2p2).forEach { p2 ->
-                playedAgainst.getOrPut(p1.id) { mutableListOf() }.add(p2.id)
-                playedAgainst.getOrPut(p2.id) { mutableListOf() }.add(p1.id)
-            }
-        }
+        // Opdater global opponent count
+        recordOpponents(t1p1, t1p2, t2p1, t2p2)
     }
 
     private fun incrementPartner(p1: Player, p2: Player) {
-        val key = setOf(p1.id, p2.id)
+        val key = pairKey(p1.id, p2.id)
         partnerCount[key] = (partnerCount[key] ?: 0) + 1
     }
 
-    private fun allPlayersHavePartneredWithAll(): Boolean {
-        val requiredPartners = players.size - 1
-        return players.all { player ->
-            val uniquePartners = partnerCount.keys
-                .filter { it.contains(player.id) }
-                .flatMap { it }
-                .filter { it != player.id }
-                .toSet()
-            uniquePartners.size >= requiredPartners
-        }
-    }
 }

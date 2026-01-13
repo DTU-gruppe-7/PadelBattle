@@ -29,10 +29,17 @@ fun TournamentViewScreen(
     val tournament by viewModel.tournament.collectAsState()
     val revision by viewModel.revision.collectAsState()
 
-    // Initialiser matchListViewModel når turneringen første gang indlæses
+    // Indlæs turneringen og sæt til første uafspillede runde ved første gang
     LaunchedEffect(tournament?.id) {
         tournament?.let {
             matchListViewModel.loadTournament(it.matches)
+        }
+    }
+
+    // Opdater kun kampene (uden at skifte runde) når turneringen genindlæses
+    LaunchedEffect(revision) {
+        tournament?.let {
+            matchListViewModel.updateMatches(it.matches)
         }
     }
 
@@ -50,8 +57,9 @@ fun TournamentViewScreen(
                             matchEditViewModel = matchEditViewModel,
                             matchListViewModel = matchListViewModel,
                             onMatchUpdated = {
-                                viewModel.notifyTournamentUpdated()
-                                // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
+                                // Genindlæs turneringen fra databasen for at få nye kampe
+                                viewModel.reloadFromDatabase()
+                                // Opdater standings med de nyeste spillerdata
                                 standingsViewModel.setPlayers(currentTournament.players.map { it.copy() })
                             },
                             onTournamentCompleted = {

@@ -54,8 +54,12 @@ fun App(
             database.matchDao()
         )
     }
-    val tournamentViewModel: TournamentViewModel = viewModel { 
-        TournamentViewModel(database.tournamentDao(), database.playerDao()) 
+    val tournamentViewModel: TournamentViewModel = viewModel {
+        TournamentViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
     }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
     val matchEditViewModel: MatchEditViewModel = viewModel {
@@ -73,8 +77,9 @@ fun App(
     MaterialTheme {
         val navController = rememberNavController()
 
-        LaunchedEffect(Unit) {
-            // Sæt delete-handlingen
+        // Sæt delete callback - denne opdateres når navController ændres
+        // Bruger DisposableEffect for at sikre cleanup ved unmount
+        androidx.compose.runtime.DisposableEffect(navController) {
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -84,17 +89,9 @@ fun App(
                 )
             }
 
-            // Sæt duplicate-handlingen
-            settingsViewModel.setOnDuplicateTournament {
-                tournamentViewModel.tournament.value?.let { tournament ->
-                    val (tournamentType, tournamentId) = homeViewModel.getDuplicationNavigationData(tournament)
-                    navController.navigate(
-                        TournamentConfig(
-                            tournamentType = tournamentType,
-                            duplicateFromId = tournamentId
-                        )
-                    )
-                }
+            onDispose {
+                // Ryd callbacks for at undgå memory leaks
+                settingsViewModel.clearCallbacks()
             }
         }
 

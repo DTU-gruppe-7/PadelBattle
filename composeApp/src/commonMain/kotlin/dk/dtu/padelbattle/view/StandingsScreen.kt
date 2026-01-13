@@ -110,7 +110,8 @@ fun StandingsScreen(
 
         // Spillerliste
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f)
         ) {
             val leaderTotal = sortedPlayers.firstOrNull()?.displayTotal ?: 0
 
@@ -123,6 +124,52 @@ fun StandingsScreen(
                 )
             }
         }
+
+        // Forklaring af kolonner
+        StandingsLegend()
+    }
+}
+
+@Composable
+private fun StandingsLegend() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, bottom = 8.dp)
+    ) {
+        LegendItem(
+            label = "W-L-D",
+            description = "Vundne - Tabte - Uafgjorte kampe"
+        )
+        LegendItem(
+            label = "+Bonus",
+            description = "Midlertidige point for manglende kampe"
+        )
+        LegendItem(
+            label = "Diff",
+            description = "Afstand til førstepladsen"
+        )
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, description: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Text(
+            text = description,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

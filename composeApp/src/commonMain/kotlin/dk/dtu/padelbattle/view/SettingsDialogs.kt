@@ -101,18 +101,20 @@ fun PointsChangeWarningDialog(
 /**
  * Dialog til at ændre antallet af baner i en turnering.
  * Viser kun valgmulighederne hvis der ikke er nogen spillede kampe.
+ * Viser loading state mens opdateringen sker.
  */
 @Composable
 fun NumberOfCourtsDialog(
     currentCourts: Int,
     maxCourts: Int,
     hasPlayedMatches: Boolean,
+    isLoading: Boolean = false,
     onConfirm: (Int) -> Unit,
     onCancel: () -> Unit
 ) {
     var selectedCourts by remember { mutableStateOf(currentCourts) }
 
-    Dialog(onDismissRequest = onCancel) {
+    Dialog(onDismissRequest = { if (!isLoading) onCancel() }) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -131,7 +133,19 @@ fun NumberOfCourtsDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (hasPlayedMatches) {
+                if (isLoading) {
+                    // Vis loading state
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.padding(32.dp)
+                    )
+
+                    Text(
+                        text = "Genererer nye kampe...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                } else if (hasPlayedMatches) {
                     // Vis besked om at ændring ikke er tilladt
                     Text(
                         text = "⚠️ Kan ikke ændres",

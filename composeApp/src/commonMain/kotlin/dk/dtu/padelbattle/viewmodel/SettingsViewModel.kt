@@ -74,6 +74,9 @@ class SettingsViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _isUpdatingCourts = MutableStateFlow(false)
+    val isUpdatingCourts: StateFlow<Boolean> = _isUpdatingCourts.asStateFlow()
+
     fun clearError() {
         _error.value = null
     }
@@ -245,45 +248,129 @@ class SettingsViewModel(
      * Opdaterer antallet af baner for den aktuelle turnering.
      * Sletter alle eksisterende kampe og genstarter turneringen med det nye antal baner.
      * Dette er kun tilladt hvis ingen kampe er blevet spillet endnu.
+     *
+     * Bruger en transaktionel tilgang med rollback for at sikre data konsistens:
+     * 1. Viser loading state i dialogen
+     * 2. Tjekker i database om der er spillede kampe (for at undgå race condition)
+     * 3. Gemmer backup af gamle kampe
+     * 4. Genererer nye kampe i memory
+     * 5. Udfører alle database-operationer atomært
+     * 6. Ved fejl: ruller tilbage til original tilstand
+     * 7. Lukker dialog kun når alt er færdigt eller ved fejl
      */
     fun updateNumberOfCourts(tournamentId: String, newCourts: Int) {
         val tournament = currentTournament ?: return
 
-        // Sikkerhedstjek: Må kun ændre hvis ingen kampe er spillet
+        // Sikkerhedstjek: Må kun ændre hvis ingen kampe er spillet (initial check)
         if (tournament.hasPlayedMatches()) {
+            _error.value = "Kan ikke ændre antal baner når kampe er blevet spillet"
             return
         }
 
         viewModelScope.launch {
-            try {
-                // Luk dialogen først for bedre UX
-                dismissDialog()
+            // Gem backup af original tilstand for rollback (UDENFOR try-catch så det kan bruges i catch)
+            val oldNumberOfCourts = tournament.numberOfCourts
+            val oldMatches = tournament.matches.toList() // Lav en kopi af listen
 
-                // Opdater antallet af baner i modellen
+            try {
+                // Vis loading state
+                _isUpdatingCourts.value = true
+
+                // KRITISK: Tjek i databasen om der er spillede kampe for at undgå race condition
+                // Dette sikrer at selv hvis en kamp bliver markeret som spillet i en anden coroutine,
+                // så fanger vi det her
+                val playedMatchesCount = matchDao.countPlayedMatches(tournamentId)
+                if (playedMatchesCount > 0) {
+                    _error.value = "Kan ikke ændre antal baner: $playedMatchesCount kamp(e) er allerede blevet spillet"
+                    _isUpdatingCourts.value = false
+                    dismissDialog()
+                    return@launch
+                }
+
+                // Opdater antallet af baner i modellen midlertidigt
                 tournament.numberOfCourts = newCourts
 
-                // Slet alle kampe fra databasen
-                matchDao.deleteMatchesByTournament(tournamentId)
-
-                // Ryd lokale kampe først
+                // Ryd lokale kampe
                 tournament.matches.clear()
 
                 // Genstart turneringen (genererer nye kampe) - kør på Default dispatcher for CPU-intensivt arbejde
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                    tournament.startTournament()
+                    val success = tournament.startTournament()
+                    if (!success) {
+                        throw IllegalStateException("Kunne ikke generere kampe for turneringen")
+                    }
                 }
 
-                // Opdater turneringen i databasen
-                tournamentDao.updateNumberOfCourts(tournamentId, newCourts)
+                // Valider at der blev genereret kampe
+                if (tournament.matches.isEmpty()) {
+                    throw IllegalStateException("Ingen kampe blev genereret")
+                }
 
-                // Gem de nye kampe til databasen
-                val matchEntities = tournament.matches.map { it.toEntity(tournamentId) }
-                matchDao.insertMatches(matchEntities)
+                // Konverter kampe til entities først (før database-operationer)
+                val newMatchEntities = tournament.matches.map { it.toEntity(tournamentId) }
 
-                // Notificer UI om ændringen
-                onTournamentUpdated?.invoke()
+                // Nu udfør alle database-operationer sekventielt med explicit error handling
+                try {
+                    // KRITISK: Double-check lige før vi sletter - sidste chance for at undgå race condition
+                    val finalPlayedMatchesCount = matchDao.countPlayedMatches(tournamentId)
+                    if (finalPlayedMatchesCount > 0) {
+                        throw IllegalStateException("Kan ikke ændre antal baner: Kampe blev spillet under operationen")
+                    }
+
+                    // 1. Slet gamle kampe
+                    matchDao.deleteMatchesByTournament(tournamentId)
+
+                    // 2. Opdater antal baner
+                    tournamentDao.updateNumberOfCourts(tournamentId, newCourts)
+
+                    // 3. Indsæt nye kampe
+                    matchDao.insertMatches(newMatchEntities)
+
+                    // Hvis vi når hertil, er alle operationer lykkedes
+                    // Notificer UI om ændringen
+                    onTournamentUpdated?.invoke()
+
+                    // Skjul loading og luk dialog ved success
+                    _isUpdatingCourts.value = false
+                    dismissDialog()
+
+                } catch (dbException: Exception) {
+                    // Database-operation fejlede - forsøg rollback
+                    throw Exception("Database-operation fejlede: ${dbException.message}", dbException)
+                }
+
             } catch (e: Exception) {
+                // Noget gik galt - rollback til original tilstand
+                tournament.numberOfCourts = oldNumberOfCourts
+                tournament.matches.clear()
+                tournament.matches.addAll(oldMatches)
+
+                // Forsøg at genoprette database-tilstanden
+                try {
+                    // Slet eventuelle delvist indsatte kampe
+                    matchDao.deleteMatchesByTournament(tournamentId)
+
+                    // Genopret originale kampe i databasen
+                    val oldMatchEntities = oldMatches.map { it.toEntity(tournamentId) }
+                    matchDao.insertMatches(oldMatchEntities)
+
+                    // Genopret original numberOfCourts
+                    tournamentDao.updateNumberOfCourts(tournamentId, oldNumberOfCourts)
+
+                } catch (rollbackException: Exception) {
+                    // Rollback fejlede også - dette er en kritisk fejl
+                    _error.value = "Kritisk fejl: Kunne ikke rulle tilbage ændringer. ${rollbackException.message}"
+                    _isUpdatingCourts.value = false
+                    // Luk dialogen ved kritisk fejl
+                    dismissDialog()
+                    return@launch
+                }
+
+                // Vis fejlmeddelelse til brugeren
                 _error.value = "Kunne ikke ændre antal baner: ${e.message}"
+                _isUpdatingCourts.value = false
+                // Luk dialogen ved fejl
+                dismissDialog()
             }
         }
     }

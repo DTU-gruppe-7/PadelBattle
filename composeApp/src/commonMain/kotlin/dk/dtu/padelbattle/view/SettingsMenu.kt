@@ -97,6 +97,8 @@ fun SettingsMenu(
         }
 
         // Håndter settings dialoge
+        val isUpdatingCourts by viewModel.isUpdatingCourts.collectAsState()
+
         when (val dialogType = currentDialogType) {
             is SettingsDialogType.EditTournamentName -> {
                 TextInputDialog(
@@ -117,6 +119,7 @@ fun SettingsMenu(
                     currentCourts = dialogType.currentCourts,
                     maxCourts = dialogType.maxCourts,
                     hasPlayedMatches = dialogType.hasPlayedMatches,
+                    isLoading = isUpdatingCourts,
                     onConfirm = { newCourts ->
                         viewModel.updateNumberOfCourts(dialogType.tournamentId, newCourts)
                     },

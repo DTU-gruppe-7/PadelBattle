@@ -22,6 +22,11 @@ object ChooseTournament: Screen {
 }
 
 @Serializable
+object SearchTournament: Screen {
+    override val title = "Søg turneringer"
+}
+
+@Serializable
 data class TournamentConfig(
     val tournamentType: String,
     val duplicateFromId: String? = null

@@ -20,6 +20,10 @@ class HomeViewModel(
     private val matchDao: MatchDao
 ) : ViewModel() {
 
+    // Søgetilstand
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     // Henter fulde turneringer med spillere og kampe
     val tournaments: StateFlow<List<Tournament>> = tournamentDao.getAllTournamentsWithDetails(playerDao, matchDao)
         .stateIn(
@@ -27,6 +31,14 @@ class HomeViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+    }
 
     // Fælles handler til delete confirmation dialog
     val deleteConfirmation = DeleteConfirmationHandler()

@@ -207,10 +207,10 @@ private fun StandingRow(
 
             // Difference fra førstepladsen
             Text(
-                text = if (position == 1) "-" else "$difference",
+                text = if (difference == 0) "-" else "$difference",
                 style = MaterialTheme.typography.bodyMedium,
                 color = when {
-                    position == 1 -> MaterialTheme.colorScheme.onSurface
+                    difference == 0 -> MaterialTheme.colorScheme.onSurface
                     else -> MaterialTheme.colorScheme.error
                 },
                 modifier = Modifier.weight(0.6f),

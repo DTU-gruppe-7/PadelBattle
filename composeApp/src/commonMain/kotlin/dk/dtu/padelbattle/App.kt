@@ -72,7 +72,7 @@ fun App(
         val navController = rememberNavController()
 
         LaunchedEffect(Unit) {
-
+            // Sæt delete-handlingen
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -80,6 +80,19 @@ fun App(
                         navController.popBackStack()
                     }
                 )
+            }
+
+            // Sæt duplicate-handlingen
+            settingsViewModel.setOnDuplicateTournament {
+                tournamentViewModel.tournament.value?.let { tournament ->
+                    val (tournamentType, tournamentId) = homeViewModel.getDuplicationNavigationData(tournament)
+                    navController.navigate(
+                        TournamentConfig(
+                            tournamentType = tournamentType,
+                            duplicateFromId = tournamentId
+                        )
+                    )
+                }
             }
         }
 

@@ -28,6 +28,7 @@ class TournamentViewModel(
         _tournament.value = tournament
     }
 
+
     fun updateTournament(updatedTournament: Tournament) {
         viewModelScope.launch {
             _isLoading.value = true

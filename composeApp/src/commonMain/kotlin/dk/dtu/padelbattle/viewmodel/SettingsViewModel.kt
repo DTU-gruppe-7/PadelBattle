@@ -40,17 +40,9 @@ class SettingsViewModel(
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
     val currentDialogType: StateFlow<SettingsDialogType?> = _currentDialogType.asStateFlow()
 
-    // Reference til den aktuelle turnering (sættes fra TournamentViewModel)
+    // Reference til den aktuelle turnering (sættes fra updateScreen)
     private var currentTournament: Tournament? = null
     private var onTournamentUpdated: (() -> Unit)? = null
-
-    /**
-     * Sætter den aktuelle turnering og callback for opdateringer
-     */
-    fun setCurrentTournament(tournament: Tournament?, onUpdated: (() -> Unit)?) {
-        currentTournament = tournament
-        onTournamentUpdated = onUpdated
-    }
 
     private val _showPointsDialog = MutableStateFlow(false)
     val showPointsDialog: StateFlow<Boolean> = _showPointsDialog.asStateFlow()
@@ -131,7 +123,7 @@ class SettingsViewModel(
                 // Opdater i den lokale model
                 currentTournament?.name = newName
 
-                // Notificer UI om ændringen
+                // Notificer UI om ændringen (trigger revision opdatering)
                 onTournamentUpdated?.invoke()
 
                 // Luk dialogen

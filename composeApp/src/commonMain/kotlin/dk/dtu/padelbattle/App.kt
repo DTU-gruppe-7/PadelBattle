@@ -22,7 +22,7 @@ import dk.dtu.padelbattle.view.navigation.TopBar
 import dk.dtu.padelbattle.view.navigation.TournamentConfig
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
-import dk.dtu.padelbattle.view.TextInputDialog
+import dk.dtu.padelbattle.view.SettingsDialogs
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
@@ -31,7 +31,6 @@ import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import dk.dtu.padelbattle.viewmodel.SettingsViewModel
-import dk.dtu.padelbattle.viewmodel.SettingsDialogType
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -101,7 +100,6 @@ fun App(
 
         // Hent turnering og opdater settings menu items baseret på current screen
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
-        val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
         val currentTournament by tournamentViewModel.tournament.collectAsState()
         settingsViewModel.updateScreen(
             screen = currentScreen,
@@ -109,16 +107,9 @@ fun App(
             onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
         )
 
-        // Opdater SettingsViewModel med den aktuelle turnering
-        LaunchedEffect(currentTournament) {
-            settingsViewModel.setCurrentTournament(currentTournament) {
-                // Notificer TournamentViewModel om ændringen
-                tournamentViewModel.notifyTournamentUpdated()
-            }
-        }
-
         // Håndter navigation når turneringens navn ændres
-        LaunchedEffect(currentTournament?.name) {
+        val revision by tournamentViewModel.revision.collectAsState()
+        LaunchedEffect(currentTournament?.name, revision) {
             currentTournament?.let { tournament ->
                 // Naviger til TournamentView med det nye navn for at opdatere topbaren
                 if (currentScreen is TournamentView && currentScreen.tournamentName != tournament.name) {
@@ -129,24 +120,8 @@ fun App(
             }
         }
 
-        // Vis dialog baseret på currentDialogType
-        when (val dialogType = currentDialogType) {
-            is SettingsDialogType.EditTournamentName -> {
-                TextInputDialog(
-                    title = "Ændr turneringsnavn",
-                    label = "Turneringsnavn",
-                    currentValue = dialogType.currentName,
-                    onConfirm = { newName ->
-                        settingsViewModel.updateTournamentName(dialogType.tournamentId, newName)
-                    },
-                    onDismiss = { settingsViewModel.dismissDialog() },
-                    validateInput = { name ->
-                        if (name.isBlank()) "Navn må ikke være tomt" else null
-                    }
-                )
-            }
-            null -> { /* Ingen dialog */ }
-        }
+        // Vis settings dialoger (håndteres af SettingsDialogs composable)
+        SettingsDialogs(settingsViewModel)
 
         Scaffold(
             topBar = {

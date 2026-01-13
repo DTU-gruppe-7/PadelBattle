@@ -10,9 +10,7 @@ import dk.dtu.padelbattle.data.mapper.getAllTournamentsWithDetails
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -48,5 +46,16 @@ class HomeViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Returnerer navigation data til duplikering af en turnering.
+     * Ekstraherer tournamentType og tournamentId som Strings til navigation.
+     *
+     * @param tournament Turneringen der skal duplikeres
+     * @return Pair af (tournamentType, tournamentId) der kan bruges til navigation
+     */
+    fun getDuplicationNavigationData(tournament: Tournament): Pair<String, String> {
+        return Pair(tournament.type.name, tournament.id)
     }
 }

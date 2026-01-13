@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,7 +36,8 @@ fun StandingsScreen(
     players: List<Player>,
     viewModel: StandingsViewModel,
     pointsPerMatch: Int = 16,
-    revision: Int = 0
+    revision: Int = 0,
+    onPlayerNameChanged: (Player, String) -> Unit = { _, _ -> }  // Callback til at gemme navneændring
 ) {
     // Opdater viewModel med spillere når de ændres - lav en ny liste med kopierede objekter for at trigger StateFlow
     // Brug revision som key for at sikre opdatering når kampe opdateres
@@ -42,6 +47,24 @@ fun StandingsScreen(
 
     // Hent sorterede spillere fra viewModel StateFlow - opdateres automatisk
     val sortedPlayers by viewModel.sortedPlayers.collectAsState()
+    
+    // State for redigering af spillernavn
+    val editingPlayer by viewModel.editingPlayer.collectAsState()
+    val editingName by viewModel.editingName.collectAsState()
+
+    // Vis edit dialog hvis en spiller er ved at blive redigeret
+    if (editingPlayer != null) {
+        PlayerNameEditDialog(
+            currentName = editingName,
+            onNameChange = { viewModel.updateEditingName(it) },
+            onSave = { 
+                viewModel.savePlayerName { player, newName ->
+                    onPlayerNameChanged(player, newName)
+                }
+            },
+            onDismiss = { viewModel.cancelEditing() }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -120,7 +143,8 @@ fun StandingsScreen(
                 StandingRow(
                     standing = standing,
                     position = index + 1,
-                    leaderTotal = leaderTotal
+                    leaderTotal = leaderTotal,
+                    onPlayerClick = { player -> viewModel.startEditingPlayer(player) }
                 )
             }
         }
@@ -177,7 +201,8 @@ private fun LegendItem(label: String, description: String) {
 private fun StandingRow(
     standing: PlayerStanding,
     position: Int,
-    leaderTotal: Int
+    leaderTotal: Int,
+    onPlayerClick: (Player) -> Unit = {}
 ) {
     val player = standing.player
     val difference = standing.displayTotal - leaderTotal
@@ -226,12 +251,14 @@ private fun StandingRow(
                 }
             }
 
-            // Navn
+            // Navn - klikbart for at redigere
             Text(
                 text = player.name,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (position <= 3) FontWeight.Bold else FontWeight.Normal,
-                modifier = Modifier.weight(1.5f)
+                modifier = Modifier
+                    .weight(1.5f)
+                    .clickable { onPlayerClick(player) }
             )
 
             // W-L-D (Wins-Losses-Draws)
@@ -275,4 +302,42 @@ private fun StandingRow(
             )
         }
     }
+}
+
+/**
+ * Dialog til redigering af spillernavn.
+ */
+@Composable
+fun PlayerNameEditDialog(
+    currentName: String,
+    onNameChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rediger spillernavn") },
+        text = {
+            OutlinedTextField(
+                value = currentName,
+                onValueChange = onNameChange,
+                label = { Text("Navn") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onSave,
+                enabled = currentName.isNotBlank()
+            ) {
+                Text("Gem")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuller")
+            }
+        }
+    )
 }

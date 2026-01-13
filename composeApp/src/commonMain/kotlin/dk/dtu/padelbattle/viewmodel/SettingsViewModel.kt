@@ -3,7 +3,9 @@ package dk.dtu.padelbattle.viewmodel
 import androidx.lifecycle.ViewModel
 import dk.dtu.padelbattle.util.DeleteConfirmationHandler
 import androidx.lifecycle.viewModelScope
+import dk.dtu.padelbattle.data.dao.MatchDao
 import dk.dtu.padelbattle.data.dao.TournamentDao
+import dk.dtu.padelbattle.data.mapper.toEntity
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.view.SettingsMenuItem
 import dk.dtu.padelbattle.view.navigation.Screen
@@ -19,6 +21,13 @@ import kotlinx.coroutines.launch
 sealed class SettingsDialogType {
     data class EditTournamentName(val currentName: String, val tournamentId: String) : SettingsDialogType()
     // Tilføj flere dialog typer her efterhånden
+
+    data class EditNumberOfCourts(
+        val currentCourts: Int,
+        val maxCourts: Int,
+        val tournamentId: String,
+        val hasPlayedMatches: Boolean
+    ) : SettingsDialogType()
 }
 
 /**
@@ -26,7 +35,8 @@ sealed class SettingsDialogType {
  * Bestemmer hvilke menu items der skal vises baseret på den aktuelle skærm.
  */
 class SettingsViewModel(
-    private val tournamentDao: TournamentDao
+    private val tournamentDao: TournamentDao,
+    private val matchDao: MatchDao
 ) : ViewModel() {
 
     private val _menuItems = MutableStateFlow<List<SettingsMenuItem>?>(null)
@@ -60,6 +70,13 @@ class SettingsViewModel(
 
     private val _pendingPointsChange = MutableStateFlow<Int?>(null)
     val pendingPointsChange: StateFlow<Int?> = _pendingPointsChange.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    fun clearError() {
+        _error.value = null
+    }
 
     // 2. Lav en funktion, så App.kt kan "injecte" handlingen
     fun setOnDeleteTournament(action: () -> Unit) {
@@ -144,10 +161,17 @@ class SettingsViewModel(
 
     /**
      * Håndterer ændring af antal baner.
-     * TODO: Implementer funktionalitet
+     * Viser dialog til brugeren.
      */
     private fun onChangeNumberOfCourts() {
-        // Placeholder - implementeres senere
+        currentTournament?.let { tournament ->
+            _currentDialogType.value = SettingsDialogType.EditNumberOfCourts(
+                currentCourts = tournament.numberOfCourts,
+                maxCourts = tournament.getMaxCourts(),
+                tournamentId = tournament.id,
+                hasPlayedMatches = tournament.hasPlayedMatches()
+            )
+        }
     }
 
     /**
@@ -216,5 +240,51 @@ class SettingsViewModel(
     fun dismissPointsDialog() {
         _showPointsDialog.value = false
     }
-}
 
+    /**
+     * Opdaterer antallet af baner for den aktuelle turnering.
+     * Sletter alle eksisterende kampe og genstarter turneringen med det nye antal baner.
+     * Dette er kun tilladt hvis ingen kampe er blevet spillet endnu.
+     */
+    fun updateNumberOfCourts(tournamentId: String, newCourts: Int) {
+        val tournament = currentTournament ?: return
+
+        // Sikkerhedstjek: Må kun ændre hvis ingen kampe er spillet
+        if (tournament.hasPlayedMatches()) {
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                // Luk dialogen først for bedre UX
+                dismissDialog()
+
+                // Opdater antallet af baner i modellen
+                tournament.numberOfCourts = newCourts
+
+                // Slet alle kampe fra databasen
+                matchDao.deleteMatchesByTournament(tournamentId)
+
+                // Ryd lokale kampe først
+                tournament.matches.clear()
+
+                // Genstart turneringen (genererer nye kampe) - kør på Default dispatcher for CPU-intensivt arbejde
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    tournament.startTournament()
+                }
+
+                // Opdater turneringen i databasen
+                tournamentDao.updateNumberOfCourts(tournamentId, newCourts)
+
+                // Gem de nye kampe til databasen
+                val matchEntities = tournament.matches.map { it.toEntity(tournamentId) }
+                matchDao.insertMatches(matchEntities)
+
+                // Notificer UI om ændringen
+                onTournamentUpdated?.invoke()
+            } catch (e: Exception) {
+                _error.value = "Kunne ikke ændre antal baner: ${e.message}"
+            }
+        }
+    }
+}

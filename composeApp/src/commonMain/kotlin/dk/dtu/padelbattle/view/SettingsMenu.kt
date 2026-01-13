@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import dk.dtu.padelbattle.viewmodel.SettingsDialogType
 import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 
 /**
@@ -43,6 +44,7 @@ fun SettingsMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val showDeleteConfirmation by viewModel.deleteConfirmation.showDeleteConfirmation.collectAsState()
+    val currentDialogType by viewModel.currentDialogType.collectAsState()
 
     Box(modifier = modifier) {
         IconButton(
@@ -92,6 +94,36 @@ fun SettingsMenu(
                     }
                 }
             )
+        }
+
+        // Håndter settings dialoge
+        when (val dialogType = currentDialogType) {
+            is SettingsDialogType.EditTournamentName -> {
+                TextInputDialog(
+                    title = "Ændr turneringsnavn",
+                    label = "Turneringsnavn",
+                    currentValue = dialogType.currentName,
+                    onConfirm = { newName ->
+                        viewModel.updateTournamentName(dialogType.tournamentId, newName)
+                    },
+                    onDismiss = { viewModel.dismissDialog() },
+                    validateInput = { name ->
+                        if (name.isBlank()) "Navn må ikke være tomt" else null
+                    }
+                )
+            }
+            is SettingsDialogType.EditNumberOfCourts -> {
+                NumberOfCourtsDialog(
+                    currentCourts = dialogType.currentCourts,
+                    maxCourts = dialogType.maxCourts,
+                    hasPlayedMatches = dialogType.hasPlayedMatches,
+                    onConfirm = { newCourts ->
+                        viewModel.updateNumberOfCourts(dialogType.tournamentId, newCourts)
+                    },
+                    onCancel = { viewModel.dismissDialog() }
+                )
+            }
+            null -> { /* Ingen dialog */ }
         }
     }
 }

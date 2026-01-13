@@ -34,4 +34,7 @@ interface MatchDao {
 
     @Query("SELECT COUNT(*) FROM matches WHERE tournamentId = :tournamentId AND isPlayed = 0")
     suspend fun countUnplayedMatches(tournamentId: String): Int
+
+    @Query("DELETE FROM matches WHERE tournamentId = :tournamentId")
+    suspend fun deleteMatchesByTournament(tournamentId: String)
 }

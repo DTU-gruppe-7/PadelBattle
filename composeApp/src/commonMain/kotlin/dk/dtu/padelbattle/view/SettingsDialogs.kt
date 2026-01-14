@@ -39,6 +39,7 @@ import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 @Composable
 fun SettingsDialogs(settingsViewModel: SettingsViewModel) {
     val currentDialogType by settingsViewModel.currentDialogType.collectAsState()
+    val isUpdatingCourts by settingsViewModel.isUpdatingCourts.collectAsState()
 
     when (val dialogType = currentDialogType) {
         is SettingsDialogType.EditTournamentName -> {
@@ -48,6 +49,18 @@ fun SettingsDialogs(settingsViewModel: SettingsViewModel) {
                     settingsViewModel.updateTournamentName(dialogType.tournamentId, newName)
                 },
                 onDismiss = { settingsViewModel.dismissDialog() }
+            )
+        }
+        is SettingsDialogType.EditNumberOfCourts -> {
+            NumberOfCourtsDialog(
+                currentCourts = dialogType.currentCourts,
+                maxCourts = dialogType.maxCourts,
+                hasPlayedMatches = dialogType.hasPlayedMatches,
+                isLoading = isUpdatingCourts,
+                onConfirm = { newCourts ->
+                    settingsViewModel.updateNumberOfCourts(dialogType.tournamentId, newCourts)
+                },
+                onCancel = { settingsViewModel.dismissDialog() }
             )
         }
         null -> { /* Ingen dialog */ }
@@ -104,6 +117,75 @@ private fun EditTournamentNameDialog(
                         onConfirm(textValue)
                     } else {
                         errorMessage = "Navn må ikke være tomt"
+                    }
+                },
+                enabled = textValue.isNotBlank() && errorMessage == null
+            ) {
+                Text("Gem")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuller")
+            }
+        }
+    )
+}
+
+/**
+ * Generisk dialog til tekstinput med validering
+ */
+@Composable
+fun TextInputDialog(
+    title: String,
+    label: String,
+    currentValue: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+    validateInput: (String) -> String? = { null }
+) {
+    var textValue by remember { mutableStateOf(currentValue) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = textValue,
+                    onValueChange = { newValue ->
+                        textValue = newValue
+                        errorMessage = validateInput(newValue)
+                    },
+                    label = { Text(label) },
+                    isError = errorMessage != null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val validationError = validateInput(textValue)
+                    if (validationError == null) {
+                        onConfirm(textValue)
+                    } else {
+                        errorMessage = validationError
                     }
                 },
                 enabled = textValue.isNotBlank() && errorMessage == null

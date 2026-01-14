@@ -71,7 +71,7 @@ fun App(
     }
     val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
     val settingsViewModel: SettingsViewModel = viewModel {
-        SettingsViewModel(database.tournamentDao())
+        SettingsViewModel(database.tournamentDao(), database.matchDao())
     }
 
     MaterialTheme {

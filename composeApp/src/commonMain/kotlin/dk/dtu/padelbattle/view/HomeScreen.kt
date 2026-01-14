@@ -1,8 +1,12 @@
 package dk.dtu.padelbattle.view
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
@@ -12,22 +16,19 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Tournament
-import dk.dtu.padelbattle.viewmodel.HomeViewModel
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import dk.dtu.padelbattle.model.utils.formatDate
+import dk.dtu.padelbattle.viewmodel.HomeViewModel
+import dk.dtu.padelbattle.ui.theme.*
 
 @Composable
 fun HomeScreen(
@@ -48,92 +49,151 @@ fun HomeScreen(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { viewModel.deleteConfirmation.dismiss() },
-            title = { Text("Slet turnering") },
+            title = { Text("Slet turnering", style = MaterialTheme.typography.titleLarge) },
             text = { Text("Er du sikker på, at du vil slette denne turnering? Denne handling kan ikke fortrydes.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.deleteConfirmation.confirm() }) {
-                    Text("Slet", color = MaterialTheme.colorScheme.error)
+                Button(
+                    onClick = { viewModel.deleteConfirmation.confirm() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Slet")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) {
                     Text("Annuller")
                 }
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
         )
     }
 
     Scaffold(
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent, // Vi bruger Box gradient nedenfor
+        floatingActionButton = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                // Søgeknap
+                FloatingActionButton(
+                    onClick = onGoToSearchScreen,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = "Søg turneringer")
+                }
+                
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Opret turnering knap (Stor og tydelig)
+                ExtendedFloatingActionButton(
+                    onClick = onGoToTournamentScreen,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    elevation = FloatingActionButtonDefaults.elevation(8.dp),
+                    icon = { Icon(Icons.Default.Add, "Opret") },
+                    text = { Text("Ny Turnering", fontWeight = FontWeight.Bold) }
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
+        // Baggrunds-box med gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    )
+                )
                 .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp) // Lidt tættere margin
             ) {
-                Text(
-                    text = "Dine Turneringer",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Tab(
-                        selected = selectedTabIndex == 0,
-                        onClick = { selectedTabIndex = 0 },
-                        text = { Text("I gang (${activeTournaments.size})") }
+                // Header Sektion
+                Column(modifier = Modifier.padding(vertical = 8.dp)) { // Mindre vertical padding
+                    Text(
+                        text = "Dine Turneringer",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
-                    Tab(
-                        selected = selectedTabIndex == 1,
-                        onClick = { selectedTabIndex = 1 },
-                        text = { Text("Afsluttet (${completedTournaments.size})") }
+                    Text(
+                        text = "Administrer dine padel kampe",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val currentTournaments = if (selectedTabIndex == 0) activeTournaments else completedTournaments
-
-                if (currentTournaments.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                // Custom Tabs
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp) // Mindre bund padding
+                ) {
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        indicator = {},
+                        divider = {},
+                        containerColor = Color.Transparent,
+                        modifier = Modifier.padding(4.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = if (selectedTabIndex == 0) Icons.Default.SportsTennis else Icons.Default.EmojiEvents,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.surfaceVariant
+                        val tabs = listOf(
+                            "I gang (${activeTournaments.size})" to 0,
+                            "Afsluttet (${completedTournaments.size})" to 1
+                        )
+                        
+                        tabs.forEach { (title, index) ->
+                            val selected = selectedTabIndex == index
+                            val containerColor by animateColorAsState(
+                                if (selected) MaterialTheme.colorScheme.surface else Color.Transparent
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = if (selectedTabIndex == 0) "Ingen aktive turneringer" else "Ingen afsluttede turneringer",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            val contentColor by animateColorAsState(
+                                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (selectedTabIndex == 0) {
+                            val shadowElevation by animateFloatAsState(if (selected) 2f else 0f)
+
+                            Tab(
+                                selected = selected,
+                                onClick = { selectedTabIndex = index },
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(containerColor)
+                                    .graphicsLayer {
+                                        this.shadowElevation = shadowElevation
+                                    }
+                            ) {
                                 Text(
-                                    text = "Tryk på + for at starte en ny kamp!",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = title,
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = contentColor
                                 )
                             }
                         }
                     }
+                }
+
+                // Liste indhold
+                val currentTournaments = if (selectedTabIndex == 0) activeTournaments else completedTournaments
+
+                if (currentTournaments.isEmpty()) {
+                    EmptyStateView(selectedTabIndex)
                 } else {
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp) // Plads til FABs
                     ) {
                         items(currentTournaments.size) { index ->
                             TournamentItemCard(
@@ -148,29 +208,42 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+    }
+}
 
-            // Søgeknap i venstre hjørne
-            FloatingActionButton(
-                onClick = onGoToSearchScreen,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+@Composable
+fun EmptyStateView(selectedTabIndex: Int) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(bottom = 100.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = if (selectedTabIndex == 0) Icons.Default.SportsTennis else Icons.Default.EmojiEvents,
+                contentDescription = null,
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-            ) {
-                Icon(Icons.Default.Search, contentDescription = "Søg turneringer")
-            }
-
-            // Opret turnering knap i højre hjørne
-            FloatingActionButton(
-                onClick = onGoToTournamentScreen,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Opret Turnering")
+                    .size(100.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = CircleShape
+                    )
+                    .padding(20.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = if (selectedTabIndex == 0) "Ingen aktive turneringer" else "Ingen afsluttede turneringer",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            if (selectedTabIndex == 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Opret en ny turnering nedenfor",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -184,25 +257,21 @@ fun TournamentItemCard(
     onDuplicate: ((Tournament) -> Unit),
     onDelete: ((Tournament) -> Unit)? = null
 ) {
-    // Track whether we've already triggered duplicate to prevent re-triggering
     var hasDuplicated by remember { mutableStateOf(false) }
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    // Swipe til højre -> Dupliker turnering
-                    // Only trigger if we haven't already duplicated
                     if (!hasDuplicated) {
                         hasDuplicated = true
                         onDuplicate.invoke(tournament)
                     }
-                    false // Return false to prevent dismissal and reset state
+                    false
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
-                    // Swipe til venstre -> Slet turnering
                     onDelete?.invoke(tournament)
-                    false // Return false to prevent dismissal and reset state
+                    false
                 }
                 else -> false
             }
@@ -210,7 +279,6 @@ fun TournamentItemCard(
         positionalThreshold = { it * 0.25f }
     )
 
-    // Reset hasDuplicated flag when dismissState settles back
     LaunchedEffect(dismissState.currentValue) {
         if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
             hasDuplicated = false
@@ -219,33 +287,50 @@ fun TournamentItemCard(
 
     SwipeToDismissBox(
         state = dismissState,
-        backgroundContent = {
-            SwipeBackground(dismissState)
-        },
-        modifier = Modifier.fillMaxWidth()
+        backgroundContent = { SwipeBackground(dismissState) },
+        modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large)
     ) {
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), // Bruger border i stedet for elevation for renere look
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
-            )
+            ),
+            shape = MaterialTheme.shapes.large,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Row(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(20.dp)
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (tournament.isCompleted) Icons.Default.EmojiEvents else Icons.Default.SportsTennis,
-                        contentDescription = null,
-                        tint = if (tournament.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(40.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    // Ikon Container
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(
+                                color = if (tournament.isCompleted) 
+                                    MaterialTheme.colorScheme.secondaryContainer 
+                                else 
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (tournament.isCompleted) Icons.Default.EmojiEvents else Icons.Default.SportsTennis,
+                            contentDescription = null,
+                            tint = if (tournament.isCompleted) 
+                                MaterialTheme.colorScheme.onSecondaryContainer 
+                            else 
+                                MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.width(16.dp))
 
@@ -253,50 +338,40 @@ fun TournamentItemCard(
                         Text(
                             text = tournament.name,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "${tournament.type.name} • ${formatDate(tournament.dateCreated)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (tournament.isCompleted) {
-                            // Din logik til at finde vindere
-                            val winners = tournament.players.let { players ->
-                                val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
-                                players.filter { it.totalPoints == maxPoints }.map { it.name }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ) {
+                                Text(
+                                    text = tournament.type.name, 
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
                             }
-
-                            // Vis vinder-teksten fremhævet
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = buildString {
-                                    append("🏆 ")
-                                    append(if (winners.size > 1) "Vindere: " else "Vinder: ")
-                                    append(winners.joinToString(" & "))
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary, // Bruger appens primære farve
-                                maxLines = 1 // Sikrer at det ikke fylder for meget, hvis der er mange
-                            )
-                        } else {
-                            Text(
-                                text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                                text = formatDate(tournament.dateCreated),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+
                         if (tournament.isCompleted) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val winners = tournament.players.let { players ->
+                                val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
+                                players.filter { it.totalPoints == maxPoints }.map { it.name }
+                            }
                             Text(
-                                text = "Afsluttet",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
-                            Text(
-                                text = "I gang",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary
+                                text = "🏆 ${winners.joinToString(" & ")}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.secondary
                             )
                         }
                     }
@@ -304,8 +379,8 @@ fun TournamentItemCard(
 
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Gå til turnering",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
         }
@@ -315,35 +390,26 @@ fun TournamentItemCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
-
-    val offset = try {
-        dismissState.requireOffset()
-    } catch (e: Exception) {
-        0f
-    }
-
+    val offset = try { dismissState.requireOffset() } catch (e: Exception) { 0f }
+    
     val direction = when {
         offset > 0f -> SwipeToDismissBoxValue.StartToEnd
         offset < 0f -> SwipeToDismissBoxValue.EndToStart
         else -> SwipeToDismissBoxValue.Settled
     }
 
-    val color = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
-        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
-        SwipeToDismissBoxValue.Settled -> Color.Transparent
-    }
-
-    val icon = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.ContentCopy
-        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
-        SwipeToDismissBoxValue.Settled -> null
-    }
-
-    val alignment = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-        SwipeToDismissBoxValue.Settled -> Alignment.Center
+    val (color, icon, alignment) = when (direction) {
+        SwipeToDismissBoxValue.StartToEnd -> Triple(
+            MaterialTheme.colorScheme.secondaryContainer, 
+            Icons.Default.ContentCopy, 
+            Alignment.CenterStart
+        )
+        SwipeToDismissBoxValue.EndToStart -> Triple(
+            MaterialTheme.colorScheme.errorContainer, 
+            Icons.Default.Delete, 
+            Alignment.CenterEnd
+        )
+        else -> Triple(Color.Transparent, null, Alignment.Center)
     }
     
     val alpha = (kotlin.math.abs(offset) / 100f).coerceIn(0f, 1f)
@@ -351,24 +417,23 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .clip(MaterialTheme.shapes.large)
             .background(color)
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 24.dp),
         contentAlignment = alignment
     ) {
-        icon?.let {
+        if (icon != null) {
             Icon(
-                imageVector = it,
+                imageVector = icon,
                 contentDescription = null,
-                tint = when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimaryContainer
-                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onErrorContainer
-                    else -> Color.Transparent
-                },
+                tint = if (direction == SwipeToDismissBoxValue.StartToEnd) 
+                    MaterialTheme.colorScheme.onSecondaryContainer 
+                else 
+                    MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(28.dp)
                     .graphicsLayer { this.alpha = alpha }
             )
         }
     }
 }
-

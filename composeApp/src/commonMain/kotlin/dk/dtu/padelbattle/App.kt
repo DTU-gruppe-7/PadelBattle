@@ -77,7 +77,7 @@ fun App(
     MaterialTheme {
         val navController = rememberNavController()
 
-        // Sæt delete callback - denne opdateres når navController ændres
+        // Sæt delete og duplicate callbacks - disse opdateres når navController ændres
         // Bruger DisposableEffect for at sikre cleanup ved unmount
         androidx.compose.runtime.DisposableEffect(navController) {
             settingsViewModel.setOnDeleteTournament {
@@ -87,6 +87,18 @@ fun App(
                         navController.popBackStack()
                     }
                 )
+            }
+
+            settingsViewModel.setOnDuplicateTournament {
+                tournamentViewModel.tournament.value?.let { tournament ->
+                    // Naviger til TournamentConfig med duplikerings-parametre
+                    navController.navigate(
+                        TournamentConfig(
+                            tournamentType = tournament.type.name,
+                            duplicateFromId = tournament.id
+                        )
+                    )
+                }
             }
 
             onDispose {

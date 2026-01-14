@@ -22,6 +22,7 @@ import dk.dtu.padelbattle.view.navigation.TopBar
 import dk.dtu.padelbattle.view.navigation.TournamentConfig
 import dk.dtu.padelbattle.view.navigation.TournamentView
 import dk.dtu.padelbattle.view.navigation.getCurrentScreen
+import dk.dtu.padelbattle.view.SettingsDialogs
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
 import dk.dtu.padelbattle.viewmodel.HomeViewModel
 import dk.dtu.padelbattle.viewmodel.MatchEditViewModel
@@ -53,7 +54,13 @@ fun App(
             database.matchDao()
         )
     }
-    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel(database.tournamentDao()) }
+    val tournamentViewModel: TournamentViewModel = viewModel {
+        TournamentViewModel(
+            database.tournamentDao(),
+            database.playerDao(),
+            database.matchDao()
+        )
+    }
     val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
     val matchEditViewModel: MatchEditViewModel = viewModel {
         MatchEditViewModel(
@@ -69,7 +76,10 @@ fun App(
 
     MaterialTheme {
         val navController = rememberNavController()
-        LaunchedEffect(Unit) {
+
+        // Sæt delete callback - denne opdateres når navController ændres
+        // Bruger DisposableEffect for at sikre cleanup ved unmount
+        androidx.compose.runtime.DisposableEffect(navController) {
             settingsViewModel.setOnDeleteTournament {
                 tournamentViewModel.deleteTournament(
                     onSuccess = {
@@ -78,7 +88,13 @@ fun App(
                     }
                 )
             }
+
+            onDispose {
+                // Ryd callbacks for at undgå memory leaks
+                settingsViewModel.clearCallbacks()
+            }
         }
+
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentScreen = getCurrentScreen(backStackEntry)
         var selectedTab by remember { mutableStateOf(0) }
@@ -100,22 +116,16 @@ fun App(
         // Hent turnering og opdater settings menu items baseret på current screen
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
         val currentTournament by tournamentViewModel.tournament.collectAsState()
+
         settingsViewModel.updateScreen(
             screen = currentScreen,
             tournament = currentTournament,
             onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
         )
 
-        // Opdater SettingsViewModel med den aktuelle turnering
-        LaunchedEffect(currentTournament) {
-            settingsViewModel.setCurrentTournament(currentTournament) {
-                // Notificer TournamentViewModel om ændringen
-                tournamentViewModel.notifyTournamentUpdated()
-            }
-        }
-
         // Håndter navigation når turneringens navn ændres
-        LaunchedEffect(currentTournament?.name) {
+        val revision by tournamentViewModel.revision.collectAsState()
+        LaunchedEffect(currentTournament?.name, revision) {
             currentTournament?.let { tournament ->
                 // Naviger til TournamentView med det nye navn for at opdatere topbaren
                 if (currentScreen is TournamentView && currentScreen.tournamentName != tournament.name) {
@@ -126,6 +136,8 @@ fun App(
             }
         }
 
+        // Vis settings dialoger (håndteres af SettingsDialogs composable)
+        SettingsDialogs(settingsViewModel)
 
         Scaffold(
             topBar = {

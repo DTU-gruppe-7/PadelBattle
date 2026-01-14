@@ -9,6 +9,7 @@ import androidx.navigation.toRoute
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.view.ChooseTournamentScreen
 import dk.dtu.padelbattle.view.HomeScreen
+import dk.dtu.padelbattle.view.SearchScreen
 import dk.dtu.padelbattle.view.TournamentConfigScreen
 import dk.dtu.padelbattle.view.TournamentViewScreen
 import dk.dtu.padelbattle.viewmodel.ChooseTournamentViewModel
@@ -35,6 +36,23 @@ fun NavigationGraph(
     onTabSelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Fælles navigation callbacks
+    val navigateToTournament: (String) -> Unit = { tournamentId ->
+        homeViewModel.tournaments.value.find { it.id == tournamentId }?.let { tournament ->
+            tournamentViewModel.setTournament(tournament)
+            navController.navigate(TournamentView(tournamentName = tournament.name))
+        }
+    }
+
+    val navigateToDuplicate: (String, String) -> Unit = { tournamentType, tournamentId ->
+        navController.navigate(
+            TournamentConfig(
+                tournamentType = tournamentType,
+                duplicateFromId = tournamentId
+            )
+        )
+    }
+
     NavHost(
         navController = navController,
         startDestination = Home,
@@ -43,26 +61,18 @@ fun NavigationGraph(
         composable<Home> {
             HomeScreen(
                 viewModel = homeViewModel,
-                onGoToTournamentScreen = {
-                    navController.navigate(ChooseTournament)
-                },
-                onTournamentClicked = { tournamentId ->
-                    // Find the tournament from the current state
-                    val tournament = homeViewModel.tournaments.value.find { it.id == tournamentId }
-                    if (tournament != null) {
-                        tournamentViewModel.setTournament(tournament)
-                        navController.navigate(TournamentView(tournamentName = tournament.name))
-                    }
-                },
-                onDuplicateTournament = { tournamentType, tournamentId ->
-                    // Navigate to TournamentConfig with duplication parameters
-                    navController.navigate(
-                        TournamentConfig(
-                            tournamentType = tournamentType,
-                            duplicateFromId = tournamentId
-                        )
-                    )
-                }
+                onGoToTournamentScreen = { navController.navigate(ChooseTournament) },
+                onTournamentClicked = navigateToTournament,
+                onDuplicateTournament = navigateToDuplicate,
+                onGoToSearchScreen = { navController.navigate(SearchTournament) }
+            )
+        }
+
+        composable<SearchTournament> {
+            SearchScreen(
+                viewModel = homeViewModel,
+                onTournamentClicked = navigateToTournament,
+                onDuplicateTournament = navigateToDuplicate
             )
         }
 

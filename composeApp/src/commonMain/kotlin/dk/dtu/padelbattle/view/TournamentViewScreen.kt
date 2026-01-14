@@ -29,10 +29,17 @@ fun TournamentViewScreen(
     val tournament by viewModel.tournament.collectAsState()
     val revision by viewModel.revision.collectAsState()
 
-    // Initialiser matchListViewModel når turneringen første gang indlæses
+    // Indlæs turneringen og sæt til første uafspillede runde ved første gang
     LaunchedEffect(tournament?.id) {
         tournament?.let {
             matchListViewModel.loadTournament(it.matches)
+        }
+    }
+
+    // Opdater kun kampene (uden at skifte runde) når turneringen genindlæses
+    LaunchedEffect(revision) {
+        tournament?.let {
+            matchListViewModel.updateMatches(it.matches)
         }
     }
 
@@ -50,8 +57,9 @@ fun TournamentViewScreen(
                             matchEditViewModel = matchEditViewModel,
                             matchListViewModel = matchListViewModel,
                             onMatchUpdated = {
-                                viewModel.notifyTournamentUpdated()
-                                // Opdater standings med de nyeste spillerdata - lav en ny liste med kopierede objekter for at trigger StateFlow
+                                // Genindlæs turneringen fra databasen for at få nye kampe
+                                viewModel.reloadFromDatabase()
+                                // Opdater standings med de nyeste spillerdata
                                 standingsViewModel.setPlayers(currentTournament.players.map { it.copy() })
                             },
                             onTournamentCompleted = {
@@ -67,11 +75,33 @@ fun TournamentViewScreen(
                         Text("Indlæser turnering...")
                     }
                 }
-                1 -> StandingsScreen(
-                    players = tournament?.players ?: emptyList(),
-                    viewModel = standingsViewModel,
-                    revision = revision
-                )
+                1 -> {
+                    val isLoading by viewModel.isLoading.collectAsState()
+                    StandingsScreen(
+                        players = tournament?.players ?: emptyList(),
+                        viewModel = standingsViewModel,
+                        pointsPerMatch = tournament?.pointsPerMatch ?: 16,
+                        revision = revision,
+                        isCompleted = tournament?.isCompleted ?: false,
+                        isLoading = isLoading,
+                        onPlayerNameChanged = { player, newName ->
+                            viewModel.updatePlayerName(player, newName)
+                        },
+                        onContinueTournament = {
+                            viewModel.continueTournament {
+                                // Turneringen er allerede opdateret i memory med nye kampe
+                                // Brug loadTournament for at navigere til den nye runde
+                                tournament?.let { t ->
+                                    matchListViewModel.loadTournament(t.matches)
+                                }
+                                // Opdater revision for at trigger UI opdatering
+                                viewModel.notifyTournamentUpdated()
+                                // Naviger til kampe-tab
+                                onTabSelected(0)
+                            }
+                        }
+                    )
+                }
             }
         }
     }

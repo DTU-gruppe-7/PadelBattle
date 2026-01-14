@@ -93,26 +93,25 @@ fun TournamentConfigScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Tournament Name Input
                     OutlinedTextField(
                         value = tournamentName,
                         onValueChange = { viewModel.updateTournamentName(it) },
-                        textStyle = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        singleLine = true,
+                        label = { Text("Turneringsnavn") },
                         modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
                         )
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = when (tournamentType) {
-                            TournamentType.AMERICANO -> "Type: Americano"
-                            TournamentType.MEXICANO -> "Type: Mexicano"
+                            TournamentType.AMERICANO -> "Americano"
+                            TournamentType.MEXICANO -> "Mexicano"
                         },
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -193,7 +192,7 @@ fun TournamentConfigScreen(
                 )
                 IconButton(
                     onClick = { viewModel.addPlayer() },
-                    enabled = currentPlayerName.isNotBlank() && playerNames.size < 16
+                    enabled = currentPlayerName.isNotBlank() && playerNames.size < Tournament.MAX_PLAYERS
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Tilføj spiller")
                 }
@@ -201,8 +200,8 @@ fun TournamentConfigScreen(
 
             Text(
                 text = when {
-                    playerNames.size < 4 -> "Mindst 4 spillere kræves (${playerNames.size}/4)"
-                    playerNames.size >= 16 -> "Maksimum 16 spillere nået"
+                    playerNames.size < Tournament.MIN_PLAYERS -> "Mindst ${Tournament.MIN_PLAYERS} spillere kræves (${playerNames.size}/${Tournament.MIN_PLAYERS})"
+                    playerNames.size >= Tournament.MAX_PLAYERS -> "Maksimum ${Tournament.MAX_PLAYERS} spillere nået"
                     else -> "${playerNames.size} spillere tilføjet"
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -275,7 +274,7 @@ fun TournamentConfigScreen(
                 title = "Antal Baner",
                 currentValue = numberOfCourts,
                 minValue = 1,
-                maxValue = 4,
+                maxValue = Tournament.MAX_COURTS,
                 onValueChange = { viewModel.updateNumberOfCourts(it) },
                 onDismiss = { showCourtsDialog = false }
             )

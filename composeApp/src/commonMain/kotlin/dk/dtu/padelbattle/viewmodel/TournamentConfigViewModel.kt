@@ -21,7 +21,7 @@ class TournamentConfigViewModel(
     private val matchDao: MatchDao
 ) : ViewModel() {
 
-    private val _tournamentName = MutableStateFlow("Turnering")
+    private val _tournamentName = MutableStateFlow("")
     val tournamentName: StateFlow<String> = _tournamentName.asStateFlow()
 
     private val _playerNames = MutableStateFlow<List<String>>(emptyList())
@@ -48,7 +48,7 @@ class TournamentConfigViewModel(
     }
     
     fun updateNumberOfCourts(courts: Int) {
-        _numberOfCourts.value = courts.coerceIn(1, 4)
+        _numberOfCourts.value = courts.coerceIn(1, Tournament.MAX_COURTS)
     }
 
     fun updatePointsPerMatch(points: Int) {
@@ -57,7 +57,7 @@ class TournamentConfigViewModel(
 
     fun addPlayer() {
         val name = _currentPlayerName.value.trim()
-        if (name.isNotBlank() && _playerNames.value.size < 16) {
+        if (name.isNotBlank() && _playerNames.value.size < Tournament.MAX_PLAYERS) {
             val newPlayerList = _playerNames.value + name
             _playerNames.value = newPlayerList
             _currentPlayerName.value = ""
@@ -136,7 +136,7 @@ class TournamentConfigViewModel(
     }
 
     fun reset() {
-        _tournamentName.value = "Turnering"
+        _tournamentName.value = ""
         _playerNames.value = emptyList()
         _currentPlayerName.value = ""
         _numberOfCourts.value = 1

@@ -46,21 +46,14 @@ class SettingsViewModel(
     val deleteConfirmation = DeleteConfirmationHandler()
 
     private var deleteAction: (() -> Unit)? = null
+    private var duplicateAction: (() -> Unit)? = null
 
     private val _currentDialogType = MutableStateFlow<SettingsDialogType?>(null)
     val currentDialogType: StateFlow<SettingsDialogType?> = _currentDialogType.asStateFlow()
 
-    // Reference til den aktuelle turnering (sættes fra TournamentViewModel)
+    // Reference til den aktuelle turnering (sættes fra updateScreen)
     private var currentTournament: Tournament? = null
     private var onTournamentUpdated: (() -> Unit)? = null
-
-    /**
-     * Sætter den aktuelle turnering og callback for opdateringer
-     */
-    fun setCurrentTournament(tournament: Tournament?, onUpdated: (() -> Unit)?) {
-        currentTournament = tournament
-        onTournamentUpdated = onUpdated
-    }
 
     private val _showPointsDialog = MutableStateFlow(false)
     val showPointsDialog: StateFlow<Boolean> = _showPointsDialog.asStateFlow()
@@ -82,9 +75,41 @@ class SettingsViewModel(
     }
 
     // 2. Lav en funktion, så App.kt kan "injecte" handlingen
+    /**
+     * Rydder alle callbacks og referencer for at undgå memory leaks.
+     */
+    override fun onCleared() {
+        super.onCleared()
+        clearCallbacks()
+    }
+
+    /**
+     * Rydder alle callbacks - kaldes ved navigation væk eller ViewModel cleanup.
+     */
+    fun clearCallbacks() {
+        deleteAction = null
+        duplicateAction = null
+        currentTournament = null
+        onTournamentUpdated = null
+    }
+
+    /**
+     * Sætter callback-funktionen for at slette en turnering.
+     * VIGTIGT: Kald clearCallbacks() når komponenten unmountes for at undgå memory leaks.
+     */
     fun setOnDeleteTournament(action: () -> Unit) {
         deleteAction = action
     }
+
+    /**
+     * Sætter callback-funktionen for at duplikere en turnering.
+     * Bruges til at navigere til TournamentConfigScreen med duplicate-parametrene.
+     * VIGTIGT: Kald clearCallbacks() når komponenten unmountes for at undgå memory leaks.
+     */
+    fun setOnDuplicateTournament(action: () -> Unit) {
+        duplicateAction = action
+    }
+
     /**
      * Opdaterer settings menu items baseret på den aktuelle skærm.
      * @param screen Den nuværende skærm
@@ -118,16 +143,17 @@ class SettingsViewModel(
                     )
                 }
             },
-            SettingsMenuItem("Ændre antal baner") {
+            SettingsMenuItem("Ændre Antal Baner") {
                 onChangeNumberOfCourts()
             },
-            SettingsMenuItem("Ændre antal points") {
+            SettingsMenuItem("Ændre Antal Points") {
                 onChangePointsPerMatch()
             },
-            SettingsMenuItem("Slet turnering") {
-                deleteConfirmation.show {
-                    deleteAction?.invoke()
-                }
+            SettingsMenuItem("Kopier Turnering") {
+                duplicateAction?.invoke()
+            },
+            SettingsMenuItem("Slet Turnering") {
+                deleteConfirmation.show { deleteAction?.invoke() }
             }
         )
     }
@@ -151,7 +177,7 @@ class SettingsViewModel(
                 // Opdater i den lokale model
                 currentTournament?.name = newName
 
-                // Notificer UI om ændringen
+                // Notificer UI om ændringen (trigger revision opdatering)
                 onTournamentUpdated?.invoke()
 
                 // Luk dialogen

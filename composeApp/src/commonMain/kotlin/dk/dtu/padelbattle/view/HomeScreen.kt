@@ -361,8 +361,10 @@ fun TournamentItemCard(
                             )
                         }
 
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Spiller og runde info (for aktive turneringer) eller vinder (for afsluttede)
                         if (tournament.isCompleted) {
-                            Spacer(modifier = Modifier.height(8.dp))
                             val winners = tournament.players.let { players ->
                                 val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
                                 players.filter { it.totalPoints == maxPoints }.map { it.name }
@@ -372,6 +374,12 @@ fun TournamentItemCard(
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.secondary
+                            )
+                        } else {
+                            Text(
+                                text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }

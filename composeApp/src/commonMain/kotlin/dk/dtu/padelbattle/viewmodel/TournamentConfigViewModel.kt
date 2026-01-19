@@ -69,12 +69,8 @@ class TournamentConfigViewModel(
         if (index in currentList.indices) {
             currentList.removeAt(index)
             _playerNames.value = currentList
-
-            //Dette sikrer at vi ikke kan slwtte en spiller hvis det vil resultere i et ulovligt antal baner. Eksempelvis hvis man ville slette den 8. spiller og havde opgivet to baner
-            val maxAllowedCourts = calculateMaxCourts(currentList.size)
-            if (_numberOfCourts.value > maxAllowedCourts) {
-                _numberOfCourts.value = maxAllowedCourts
-            }
+            // Antal baner ændres IKKE automatisk - brugeren skal selv tilføje flere spillere
+            // for at opfylde minimum (numberOfCourts * 4 spillere)
         }
     }
 
@@ -82,8 +78,17 @@ class TournamentConfigViewModel(
         return (playerCount / 4).coerceAtLeast(1)
     }
 
+    /**
+     * Beregner minimum antal spillere baseret på antal baner.
+     * Hver bane kræver 4 spillere.
+     */
+    fun getMinimumPlayers(): Int {
+        return _numberOfCourts.value * 4
+    }
+
     fun canStartTournament(): Boolean {
-        return _tournamentName.value.isNotBlank() && _playerNames.value.size >= 4
+        val minPlayers = getMinimumPlayers()
+        return _tournamentName.value.isNotBlank() && _playerNames.value.size >= minPlayers
     }
 
     /**
@@ -93,7 +98,8 @@ class TournamentConfigViewModel(
      */
     fun createTournament(tournamentType: TournamentType, onSuccess: (Tournament) -> Unit) {
         if (!canStartTournament()) {
-            _error.value = "Ugyldig konfiguration: Kræver navn og 4-16 spillere"
+            val minPlayers = getMinimumPlayers()
+            _error.value = "Ugyldig konfiguration: Kræver navn og mindst $minPlayers spillere for ${_numberOfCourts.value} baner"
             return
         }
 

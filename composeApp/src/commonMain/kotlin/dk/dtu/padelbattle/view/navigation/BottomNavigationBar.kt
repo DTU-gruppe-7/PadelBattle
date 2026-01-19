@@ -1,15 +1,17 @@
 package dk.dtu.padelbattle.view.navigation
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.List
-import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.SportsTennis
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.SportsTennis
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dk.dtu.padelbattle.ui.theme.PadelOrange
 
 @Composable
 fun BottomNavigationBar(
@@ -19,28 +21,29 @@ fun BottomNavigationBar(
 ) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        modifier = modifier
+        tonalElevation = 4.dp,
+        modifier = modifier.height(72.dp)
     ) {
         NavigationBarItem(
             selected = selectedTab == 0,
             onClick = { onTabSelected(0) },
             icon = { 
                 Icon(
-                    imageVector = if (selectedTab == 0) Icons.Default.List else Icons.Outlined.List,
+                    imageVector = if (selectedTab == 0) Icons.Filled.SportsTennis else Icons.Outlined.SportsTennis,
                     contentDescription = "Kampe"
                 ) 
             },
             label = { 
                 Text(
                     "Kampe", 
-                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.labelMedium
                 ) 
             },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedIconColor = PadelOrange,
+                selectedTextColor = PadelOrange,
+                indicatorColor = PadelOrange.copy(alpha = 0.12f),
                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -51,20 +54,21 @@ fun BottomNavigationBar(
             onClick = { onTabSelected(1) },
             icon = { 
                 Icon(
-                    imageVector = if (selectedTab == 1) Icons.Default.Star else Icons.Outlined.Star,
+                    imageVector = if (selectedTab == 1) Icons.Filled.EmojiEvents else Icons.Outlined.EmojiEvents,
                     contentDescription = "Stilling"
                 ) 
             },
             label = { 
                 Text(
                     "Stilling",
-                     fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.labelMedium
                 ) 
             },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedIconColor = PadelOrange,
+                selectedTextColor = PadelOrange,
+                indicatorColor = PadelOrange.copy(alpha = 0.12f),
                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             )

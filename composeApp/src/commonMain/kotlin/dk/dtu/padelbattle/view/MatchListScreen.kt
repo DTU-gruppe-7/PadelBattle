@@ -1,10 +1,9 @@
 package dk.dtu.padelbattle.view
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
@@ -13,11 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dk.dtu.padelbattle.model.Match
@@ -56,6 +53,7 @@ fun MatchListScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
+                            PadelOrange.copy(alpha = 0.15f),
                             MaterialTheme.colorScheme.background,
                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         )
@@ -68,15 +66,13 @@ fun MatchListScreen(
                     .padding(16.dp)
             ) {
                 // Round Navigation Header
-                Card(
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(2.dp),
-                    shape = MaterialTheme.shapes.large
+                        .padding(bottom = 16.dp)
+                        .shadow(6.dp, RoundedCornerShape(20.dp)),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface
                 ) {
                     Row(
                         modifier = Modifier
@@ -92,7 +88,7 @@ fun MatchListScreen(
                             },
                             enabled = currentRound > minRound,
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary,
+                                contentColor = PadelOrange,
                                 disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                         ) {
@@ -103,7 +99,7 @@ fun MatchListScreen(
                             Text(
                                 text = "RUNDE",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary,
+                                color = PadelOrange,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 2.sp
                             )
@@ -122,7 +118,7 @@ fun MatchListScreen(
                             },
                             enabled = currentRound < maxRound,
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary,
+                                contentColor = PadelOrange,
                                 disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                         ) {
@@ -133,12 +129,12 @@ fun MatchListScreen(
 
                 // Match List
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(currentRoundMatches.size) { index ->
                         val match = currentRoundMatches[index]
-                        MatchCard(
+                        PremiumMatchCard(
                             match = match,
                             onEditClick = {
                                 selectedMatchIndex = matches.indexOfFirst { it.id == match.id }
@@ -169,18 +165,20 @@ fun MatchListScreen(
 }
 
 @Composable
-private fun MatchCard(
+private fun PremiumMatchCard(
     match: Match,
     onEditClick: () -> Unit
 ) {
     Card(
         onClick = onEditClick,
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        shape = MaterialTheme.shapes.large
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column {
             // Header strip with court number
@@ -188,27 +186,27 @@ private fun MatchCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        if (match.isPlayed) MaterialTheme.colorScheme.secondaryContainer 
-                        else MaterialTheme.colorScheme.primaryContainer
+                        if (match.isPlayed) MaterialTheme.colorScheme.surfaceVariant 
+                        else PadelOrange
                     )
-                    .padding(vertical = 8.dp, horizontal = 16.dp),
-                contentAlignment = Alignment.Center
+                    .padding(vertical = 10.dp, horizontal = 16.dp)
             ) {
                 Text(
                     text = "BANE ${match.courtNumber}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (match.isPlayed) MaterialTheme.colorScheme.onSecondaryContainer 
-                            else MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = if (match.isPlayed) MaterialTheme.colorScheme.onSurfaceVariant 
+                            else MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.align(Alignment.Center)
                 )
                 
                 if (!match.isPlayed) {
                      Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp).align(Alignment.CenterEnd),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        modifier = Modifier.size(18.dp).align(Alignment.CenterEnd),
+                        tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -225,6 +223,7 @@ private fun MatchCard(
                 TeamColumn(
                     player1 = match.team1Player1.name,
                     player2 = match.team1Player2.name,
+                    isWinner = match.isPlayed && match.scoreTeam1 > match.scoreTeam2,
                     isLeft = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -258,6 +257,7 @@ private fun MatchCard(
                 TeamColumn(
                     player1 = match.team2Player1.name,
                     player2 = match.team2Player2.name,
+                    isWinner = match.isPlayed && match.scoreTeam2 > match.scoreTeam1,
                     isLeft = false,
                     modifier = Modifier.weight(1f)
                 )
@@ -270,6 +270,7 @@ private fun MatchCard(
 private fun TeamColumn(
     player1: String,
     player2: String,
+    isWinner: Boolean,
     isLeft: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -280,17 +281,17 @@ private fun TeamColumn(
         Text(
             text = player1,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            fontWeight = if (isWinner) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurface
+            color = if (isWinner) PadelOrange else MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = player2,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            fontWeight = if (isWinner) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurface
+            color = if (isWinner) PadelOrange else MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -303,18 +304,18 @@ private fun ScoreBox(
 ) {
     Surface(
         color = when {
-            isWinner -> MaterialTheme.colorScheme.primary
+            isWinner -> PadelOrange
             isPlayed -> MaterialTheme.colorScheme.surfaceVariant
             else -> MaterialTheme.colorScheme.surface
         },
         contentColor = when {
             isWinner -> MaterialTheme.colorScheme.onPrimary
             isPlayed -> MaterialTheme.colorScheme.onSurfaceVariant
-            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            else -> PadelOrange.copy(alpha = 0.6f)
         },
-        shape = MaterialTheme.shapes.small,
-        border = if (!isPlayed) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
-        modifier = Modifier.size(48.dp)
+        shape = RoundedCornerShape(10.dp),
+        border = if (!isPlayed) androidx.compose.foundation.BorderStroke(2.dp, PadelOrange.copy(alpha = 0.4f)) else null,
+        modifier = Modifier.size(52.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(

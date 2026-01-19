@@ -165,11 +165,11 @@ fun SearchScreen(
                         contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
                         items(filteredTournaments, key = { it.id }) { tournament ->
-                            TournamentItemCard(
+                            GlassmorphismTournamentCard(
                                 tournament = tournament,
                                 onClick = { onTournamentClicked(tournament.id) },
-                                onDuplicate = { t ->
-                                    onDuplicateTournament?.invoke(t.type.name, t.id)
+                                onDuplicate = { duplicateTournament ->
+                                    onDuplicateTournament?.invoke(duplicateTournament.type.name, duplicateTournament.id)
                                 },
                                 onDelete = null // Ingen sletning fra søgeskærmen
                             )

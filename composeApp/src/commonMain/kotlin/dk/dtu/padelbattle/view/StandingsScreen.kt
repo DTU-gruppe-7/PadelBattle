@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -203,49 +202,6 @@ fun StandingsScreen(
 }
 
 @Composable
-private fun StandingsLegend() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 8.dp)
-    ) {
-        LegendItem(
-            label = "W-L-D",
-            description = "Vundne - Tabte - Uafgjorte kampe"
-        )
-        LegendItem(
-            label = "+Bonus",
-            description = "Midlertidige point for manglende kampe"
-        )
-        LegendItem(
-            label = "Diff",
-            description = "Afstand til førstepladsen"
-        )
-    }
-}
-
-@Composable
-private fun LegendItem(label: String, description: String) {
-    Row(
-        modifier = Modifier.padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "$label:",
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(end = 8.dp)
-        )
-        Text(
-            text = description,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
 private fun PremiumStandingRow(
     standing: PlayerStanding,
     position: Int,
@@ -369,20 +325,20 @@ private fun StandingsLegend() {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
                 Icon(
-                    Icons.Default.Info, 
-                    contentDescription = null, 
-                    tint = PadelOrange, 
+                    Icons.Default.Info,
+                    contentDescription = null,
+                    tint = PadelOrange,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Forklaring", 
-                    style = MaterialTheme.typography.labelLarge, 
-                    color = PadelOrange, 
+                    "Forklaring",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = PadelOrange,
                     fontWeight = FontWeight.Bold
                 )
             }
-            
+
             LegendItem("W-L-D", "Vundne - Tabte - Uafgjorte")
             LegendItem("+Bonus", "Pointkompensation for færre kampe")
             LegendItem("Diff", "Difference fra førende spiller")

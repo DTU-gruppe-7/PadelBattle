@@ -9,6 +9,7 @@ import dk.dtu.padelbattle.data.mapper.loadFullTournamentFromDao
 import dk.dtu.padelbattle.data.mapper.toEntity
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchResult
+import dk.dtu.padelbattle.model.MexicanoExtensionTracker
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.model.utils.MatchResultService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -157,10 +158,16 @@ class MatchEditViewModel(
                     println("Minimum kampe spillet: $minMatchesPlayed, Maximum: $maxMatchesPlayed")
                     println("Alle har lige mange kampe: $allHaveEqualMatches")
 
-                    // Tjek om alle har spillet min. 3 kampe OG alle har lige mange kampe
-                    if (minMatchesPlayed >= 3 && allHaveEqualMatches) {
+                    // Tjek om extension tracker tillader afslutning
+                    val canCompleteFromTracker = MexicanoExtensionTracker.roundCompleted(tournamentId)
+                    println("Extension tracker: canComplete = $canCompleteFromTracker")
+                    
+                    // Tjek om alle har spillet min. 3 kampe OG alle har lige mange kampe OG tracker tillader det
+                    if (minMatchesPlayed >= 3 && allHaveEqualMatches && canCompleteFromTracker) {
                         println("Alle spillere har spillet mindst 3 kampe og alle har lige mange - turneringen er færdig!")
                         isCompleted = true
+                        // Ryd tracker for denne turnering
+                        MexicanoExtensionTracker.clear(tournamentId)
                     } else {
                         println("Turneringen fortsætter - genererer ny runde...")
                         // Generer næste runde automatisk

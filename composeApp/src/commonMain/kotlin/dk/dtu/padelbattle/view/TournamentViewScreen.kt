@@ -75,15 +75,33 @@ fun TournamentViewScreen(
                         Text("Indlæser turnering...")
                     }
                 }
-                1 -> StandingsScreen(
-                    players = tournament?.players ?: emptyList(),
-                    viewModel = standingsViewModel,
-                    pointsPerMatch = tournament?.pointsPerMatch ?: 16,
-                    revision = revision,
-                    onPlayerNameChanged = { player, newName ->
-                        viewModel.updatePlayerName(player, newName)
-                    }
-                )
+                1 -> {
+                    val isLoading by viewModel.isLoading.collectAsState()
+                    StandingsScreen(
+                        players = tournament?.players ?: emptyList(),
+                        viewModel = standingsViewModel,
+                        pointsPerMatch = tournament?.pointsPerMatch ?: 16,
+                        revision = revision,
+                        isCompleted = tournament?.isCompleted ?: false,
+                        isLoading = isLoading,
+                        onPlayerNameChanged = { player, newName ->
+                            viewModel.updatePlayerName(player, newName)
+                        },
+                        onContinueTournament = {
+                            viewModel.continueTournament {
+                                // Turneringen er allerede opdateret i memory med nye kampe
+                                // Brug loadTournament for at navigere til den nye runde
+                                tournament?.let { t ->
+                                    matchListViewModel.loadTournament(t.matches)
+                                }
+                                // Opdater revision for at trigger UI opdatering
+                                viewModel.notifyTournamentUpdated()
+                                // Naviger til kampe-tab
+                                onTabSelected(0)
+                            }
+                        }
+                    )
+                }
             }
         }
     }

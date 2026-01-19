@@ -33,6 +33,9 @@ interface TournamentDao {
     @Query("UPDATE tournaments SET name = :name WHERE id = :id")
     suspend fun updateTournamentName(id: String, name: String)
 
+    @Query("UPDATE tournaments SET numberOfCourts = :numberOfCourts WHERE id = :id")
+    suspend fun updateNumberOfCourts(id: String, numberOfCourts: Int)
+
     @Delete
     suspend fun deleteTournament(tournament: TournamentEntity)
 

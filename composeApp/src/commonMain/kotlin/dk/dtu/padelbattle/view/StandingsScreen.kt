@@ -9,6 +9,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -28,7 +43,10 @@ fun StandingsScreen(
     viewModel: StandingsViewModel,
     pointsPerMatch: Int = 16,
     revision: Int = 0,
-    onPlayerNameChanged: (Player, String) -> Unit = { _, _ -> }
+    isCompleted: Boolean = false,
+    isLoading: Boolean = false,
+    onPlayerNameChanged: (Player, String) -> Unit = { _, _ -> },  // Callback til at gemme navneændring
+    onContinueTournament: () -> Unit = {}  // Callback til at fortsætte turneringen
 ) {
     LaunchedEffect(players, revision, pointsPerMatch) {
         viewModel.setPlayers(players.map { it.copy() }, pointsPerMatch)
@@ -158,6 +176,72 @@ fun StandingsScreen(
                 }
             }
         }
+
+        // Fortsæt turnering knap - vises kun når turneringen er afsluttet
+        if (isCompleted) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onContinueTournament,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = if (isLoading) "Genererer ny runde..." else "Fortsæt turnering",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Forklaring af kolonner
+        StandingsLegend()
+    }
+}
+
+@Composable
+private fun StandingsLegend() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, bottom = 8.dp)
+    ) {
+        LegendItem(
+            label = "W-L-D",
+            description = "Vundne - Tabte - Uafgjorte kampe"
+        )
+        LegendItem(
+            label = "+Bonus",
+            description = "Midlertidige point for manglende kampe"
+        )
+        LegendItem(
+            label = "Diff",
+            description = "Afstand til førstepladsen"
+        )
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, description: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Text(
+            text = description,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

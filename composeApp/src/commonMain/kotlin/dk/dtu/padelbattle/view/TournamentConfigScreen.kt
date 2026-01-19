@@ -294,7 +294,7 @@ fun TournamentConfigScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = viewModel.canStartTournament(),
+                enabled = tournamentName.isNotBlank() && playerNames.size >= Tournament.MIN_PLAYERS,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PadelOrange,

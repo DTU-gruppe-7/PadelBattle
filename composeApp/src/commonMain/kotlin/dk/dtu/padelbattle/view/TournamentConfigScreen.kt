@@ -1,17 +1,8 @@
 package dk.dtu.padelbattle.view
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -20,34 +11,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SportsTennis
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
+import dk.dtu.padelbattle.ui.theme.*
 
 @Composable
 fun TournamentConfigScreen(
@@ -67,232 +47,376 @@ fun TournamentConfigScreen(
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
 
-    // Load tournament data for duplication if duplicateFromId is provided
-    // Only runs once when duplicateFromId changes (including initial composition)
     LaunchedEffect(duplicateFromId) {
         if (duplicateFromId != null) {
             viewModel.loadTournamentForDuplication(duplicateFromId)
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        PadelOrange.copy(alpha = 0.15f),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                    )
+                )
+            )
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+            // Tournament Type Header Card
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(8.dp, RoundedCornerShape(20.dp)),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Tournament Name Input
-                    OutlinedTextField(
-                        value = tournamentName,
-                        onValueChange = { viewModel.updateTournamentName(it) },
-                        label = { Text("Turneringsnavn") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+                    // Icon with gradient
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(PadelOrange, DeepAmber)
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SportsTennis,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
                         )
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = when (tournamentType) {
-                            TournamentType.AMERICANO -> "Americano"
-                            TournamentType.MEXICANO -> "Mexicano"
-                        },
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Column {
+                        Text(
+                            text = when (tournamentType) {
+                                TournamentType.AMERICANO -> "Americano"
+                                TournamentType.MEXICANO -> "Mexicano"
+                            },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Ny turnering",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
-            // Courts and Points buttons side by side
+            // Tournament Name Input
+            OutlinedTextField(
+                value = tournamentName,
+                onValueChange = { viewModel.updateTournamentName(it) },
+                label = { Text("Turneringsnavn") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PadelOrange,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+
+            // Settings Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Number of Courts Button
-                Button(
+                PremiumSettingsCard(
+                    title = "Baner",
+                    value = numberOfCourts.toString(),
                     onClick = { showCourtsDialog = true },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = "Antal Baner",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = numberOfCourts.toString(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Points Per Round Button
-                Button(
-                    onClick = { showPointsDialog = true },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = "Point pr. Runde",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = pointsPerRound.toString(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = currentPlayerName,
-                    onValueChange = { viewModel.updateCurrentPlayerName(it) },
-                    label = { Text("Spillernavn") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
+                    modifier = Modifier.weight(1f)
                 )
-                IconButton(
-                    onClick = { viewModel.addPlayer() },
-                    enabled = currentPlayerName.isNotBlank() && playerNames.size < Tournament.MAX_PLAYERS
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Tilføj spiller")
+
+                PremiumSettingsCard(
+                    title = "Point/Runde",
+                    value = pointsPerRound.toString(),
+                    onClick = { showPointsDialog = true },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Player Input Section
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Tilføj Spillere",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PadelOrange
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = currentPlayerName,
+                            onValueChange = { viewModel.updateCurrentPlayerName(it) },
+                            label = { Text("Spillernavn") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PadelOrange,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                        
+                        FilledIconButton(
+                            onClick = { viewModel.addPlayer() },
+                            enabled = currentPlayerName.isNotBlank() && playerNames.size < Tournament.MAX_PLAYERS,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = PadelOrange,
+                                contentColor = Color.White,
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Tilføj")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Player count indicator
+                    val (countColor, countText) = when {
+                        playerNames.size < Tournament.MIN_PLAYERS -> 
+                            MaterialTheme.colorScheme.error to "Mindst ${Tournament.MIN_PLAYERS} spillere (${playerNames.size}/${Tournament.MIN_PLAYERS})"
+                        playerNames.size >= Tournament.MAX_PLAYERS -> 
+                            WarningAmber to "Maks ${Tournament.MAX_PLAYERS} spillere nået"
+                        else -> 
+                            SuccessGreen to "${playerNames.size} spillere tilføjet"
+                    }
+                    Text(
+                        text = countText,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = countColor
+                    )
                 }
             }
 
-            Text(
-                text = when {
-                    playerNames.size < Tournament.MIN_PLAYERS -> "Mindst ${Tournament.MIN_PLAYERS} spillere kræves (${playerNames.size}/${Tournament.MIN_PLAYERS})"
-                    playerNames.size >= Tournament.MAX_PLAYERS -> "Maksimum ${Tournament.MAX_PLAYERS} spillere nået"
-                    else -> "${playerNames.size} spillere tilføjet"
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Card(
+            // Player List
+            Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
             ) {
-                LazyColumn(
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    itemsIndexed(playerNames) { index, playerName ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "${index + 1}. $playerName",
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            IconButton(onClick = { viewModel.removePlayer(index) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Fjern spiller")
+                if (playerNames.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Surface(
+                                modifier = Modifier.size(64.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp),
+                                        tint = PadelOrange.copy(alpha = 0.5f)
+                                    )
+                                }
                             }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Ingen spillere endnu",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        itemsIndexed(playerNames) { index, playerName ->
+                            PremiumPlayerListItem(
+                                index = index + 1,
+                                name = playerName,
+                                onRemove = { viewModel.removePlayer(index) }
+                            )
                         }
                     }
                 }
             }
-        }
 
-        // Floating checkmark button in top-right corner
-        FloatingActionButton(
-            onClick = {
-                viewModel.createTournament(tournamentType, onSuccess = { tournament ->
-                    onTournamentCreated(tournament)
-                })
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-                .size(56.dp),
-            shape = CircleShape,
-            containerColor = if (viewModel.canStartTournament()) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
+            // Start Button
+            Button(
+                onClick = {
+                    viewModel.createTournament(tournamentType, onSuccess = { tournament ->
+                        onTournamentCreated(tournament)
+                    })
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = viewModel.canStartTournament(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PadelOrange,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Start Turnering",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
+        }
+    }
+
+    // Dialogs
+    if (showCourtsDialog) {
+        PremiumNumberPickerDialog(
+            title = "Antal Baner",
+            currentValue = numberOfCourts,
+            minValue = 1,
+            maxValue = Tournament.MAX_COURTS,
+            onValueChange = { viewModel.updateNumberOfCourts(it) },
+            onDismiss = { showCourtsDialog = false }
+        )
+    }
+
+    if (showPointsDialog) {
+        PremiumPointsPickerDialog(
+            currentValue = pointsPerRound,
+            onValueChange = { viewModel.updatePointsPerMatch(it) },
+            onDismiss = { showPointsDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun PremiumSettingsCard(
+    title: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Start Turnering",
-                tint = if (viewModel.canStartTournament()) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-
-        // Courts Dialog
-        if (showCourtsDialog) {
-            NumberPickerDialog(
-                title = "Antal Baner",
-                currentValue = numberOfCourts,
-                minValue = 1,
-                maxValue = Tournament.MAX_COURTS,
-                onValueChange = { viewModel.updateNumberOfCourts(it) },
-                onDismiss = { showCourtsDialog = false }
-            )
-        }
-
-        // Points Dialog
-        if (showPointsDialog) {
-            PointsPickerDialog(
-                currentValue = pointsPerRound,
-                onValueChange = { viewModel.updatePointsPerMatch(it) },
-                onDismiss = { showPointsDialog = false }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = PadelOrange
             )
         }
     }
 }
 
 @Composable
-private fun NumberPickerDialog(
+private fun PremiumPlayerListItem(
+    index: Int,
+    name: String,
+    onRemove: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$index.",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = PadelOrange,
+                    modifier = Modifier.width(32.dp)
+                )
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Fjern",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PremiumNumberPickerDialog(
     title: String,
     currentValue: Int,
     minValue: Int,
@@ -301,14 +425,14 @@ private fun NumberPickerDialog(
     onDismiss: () -> Unit
 ) {
     var tempValue by remember { mutableStateOf(currentValue) }
-    var showScrollPicker by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -316,44 +440,40 @@ private fun NumberPickerDialog(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Value picker with +/- buttons
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    IconButton(
-                        onClick = {
-                            if (tempValue > minValue) {
-                                tempValue--
-                            }
-                        }
+                    FilledIconButton(
+                        onClick = { if (tempValue > minValue) tempValue-- },
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
-                        Text("-", style = MaterialTheme.typography.displaySmall)
+                        Text("-", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     }
 
                     Text(
                         text = tempValue.toString(),
-                        style = MaterialTheme.typography.displayLarge,
+                        style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .padding(horizontal = 32.dp)
-                            .clickable { showScrollPicker = true }
+                        color = PadelOrange,
+                        modifier = Modifier.padding(horizontal = 32.dp)
                     )
 
-                    IconButton(
-                        onClick = {
-                            if (tempValue < maxValue) {
-                                tempValue++
-                            }
-                        }
+                    FilledIconButton(
+                        onClick = { if (tempValue < maxValue) tempValue++ },
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
-                        Text("+", style = MaterialTheme.typography.displaySmall)
+                        Text("+", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -362,25 +482,23 @@ private fun NumberPickerDialog(
                 Text(
                     text = "($minValue - $maxValue)",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Annuller")
-                    }
+                    TextButton(onClick = onDismiss) { Text("Annuller") }
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(
+                    Button(
                         onClick = {
                             onValueChange(tempValue)
                             onDismiss()
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PadelOrange)
                     ) {
                         Text("Gem", fontWeight = FontWeight.Bold)
                     }
@@ -388,124 +506,23 @@ private fun NumberPickerDialog(
             }
         }
     }
-
-    // Scroll wheel picker as separate popup
-    if (showScrollPicker) {
-        ScrollWheelPickerPopup(
-            currentValue = tempValue,
-            minValue = minValue,
-            maxValue = maxValue,
-            onValueSelected = {
-                tempValue = it
-                showScrollPicker = false
-            },
-            onDismiss = { showScrollPicker = false }
-        )
-    }
 }
 
 @Composable
-private fun ScrollWheelPickerPopup(
-    currentValue: Int,
-    minValue: Int,
-    maxValue: Int,
-    onValueSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val listState = rememberLazyListState()
-
-    // Scroll to current value when popup opens
-    LaunchedEffect(Unit) {
-        listState.scrollToItem((currentValue - minValue).coerceIn(0, maxValue - minValue))
-    }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Vælg Antal",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        items(maxValue - minValue + 1) { index ->
-                            val value = minValue + index
-                            Text(
-                                text = value.toString(),
-                                style = if (value == currentValue) {
-                                    MaterialTheme.typography.displayMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                } else {
-                                    MaterialTheme.typography.headlineLarge
-                                },
-                                color = if (value == currentValue) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                },
-                                modifier = Modifier
-                                    .padding(vertical = 8.dp)
-                                    .clickable { onValueSelected(value) }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextButton(onClick = onDismiss) {
-                    Text("Luk")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PointsPickerDialog(
+fun PremiumPointsPickerDialog(
     currentValue: Int,
     onValueChange: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val availablePoints = listOf(16, 21, 24, 31, 32)
-    val listState = rememberLazyListState()
-
-    // Find the index of the current value, default to first option if not in list
-    val currentIndex = availablePoints.indexOf(currentValue).takeIf { it >= 0 } ?: 0
-
-    // Scroll to current value when dialog opens
-    LaunchedEffect(Unit) {
-        listState.scrollToItem(currentIndex)
-    }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -513,51 +530,44 @@ fun PointsPickerDialog(
             ) {
                 Text(
                     text = "Point pr. Runde",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LazyColumn(
-                        state = listState,
+                availablePoints.forEach { value ->
+                    Surface(
+                        onClick = {
+                            onValueChange(value)
+                            onDismiss()
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (value == currentValue) 
+                            PadelOrange.copy(alpha = 0.15f) 
+                        else 
+                            Color.Transparent,
+                        border = if (value == currentValue) 
+                            androidx.compose.foundation.BorderStroke(2.dp, PadelOrange) 
+                        else 
+                            null
                     ) {
-                        items(availablePoints.size) { index ->
-                            val value = availablePoints[index]
-                            Text(
-                                text = value.toString(),
-                                style = if (value == currentValue) {
-                                    MaterialTheme.typography.displayMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                } else {
-                                    MaterialTheme.typography.headlineLarge
-                                },
-                                color = if (value == currentValue) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                },
-                                modifier = Modifier
-                                    .padding(vertical = 12.dp)
-                                    .clickable {
-                                        onValueChange(value)
-                                        onDismiss()
-                                    }
-                            )
-                        }
+                        Text(
+                            text = value.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = if (value == currentValue) FontWeight.Bold else FontWeight.Medium,
+                            color = if (value == currentValue) PadelOrange else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .padding(vertical = 14.dp)
+                                .fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 TextButton(onClick = onDismiss) {
                     Text("Luk")
@@ -566,4 +576,3 @@ fun PointsPickerDialog(
         }
     }
 }
-

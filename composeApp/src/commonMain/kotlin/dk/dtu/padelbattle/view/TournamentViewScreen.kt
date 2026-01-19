@@ -112,7 +112,7 @@ fun TournamentViewScreen(
     val pendingPointsChange by settingsViewModel.pendingPointsChange.collectAsState()
 
     if (showPointsDialog) {
-        PointsPickerDialog(
+        PremiumPointsPickerDialog(
             currentValue = tournament?.pointsPerMatch ?: 16,
             onValueChange = { settingsViewModel.onPointsSelected(it) },
             onDismiss = { settingsViewModel.dismissPointsDialog() }

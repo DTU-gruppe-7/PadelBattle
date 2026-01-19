@@ -31,6 +31,7 @@ import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.MatchListViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
 import dk.dtu.padelbattle.viewmodel.SettingsViewModel
+import dk.dtu.padelbattle.ui.theme.PadelBattleTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -74,7 +75,7 @@ fun App(
         SettingsViewModel(database.tournamentDao(), database.matchDao())
     }
 
-    MaterialTheme {
+    PadelBattleTheme {
         val navController = rememberNavController()
 
         // Sæt delete og duplicate callbacks - disse opdateres når navController ændres
@@ -161,7 +162,7 @@ fun App(
                     settingsViewModel = settingsViewModel
                 )
             },
-            containerColor = Color.LightGray,
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 // Vis kun bottom bar på TournamentView skærmen
                 if (currentScreen is TournamentView) {

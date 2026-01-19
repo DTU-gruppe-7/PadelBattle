@@ -1,8 +1,13 @@
 package dk.dtu.padelbattle.view
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
@@ -12,29 +17,28 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dk.dtu.padelbattle.model.Tournament
-import dk.dtu.padelbattle.viewmodel.HomeViewModel
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import dk.dtu.padelbattle.model.utils.formatDate
+import dk.dtu.padelbattle.viewmodel.HomeViewModel
+import dk.dtu.padelbattle.ui.theme.*
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onGoToTournamentScreen: () -> Unit,
     onTournamentClicked: (String) -> Unit,
-    onDuplicateTournament: ((String, String) -> Unit)? = null, // (tournamentType, tournamentId) -> Unit
+    onDuplicateTournament: ((String, String) -> Unit)? = null,
     onGoToSearchScreen: () -> Unit = {}
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
@@ -48,129 +52,193 @@ fun HomeScreen(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { viewModel.deleteConfirmation.dismiss() },
-            title = { Text("Slet turnering") },
-            text = { Text("Er du sikker på, at du vil slette denne turnering? Denne handling kan ikke fortrydes.") },
+            title = { Text("Slet turnering", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("Er du sikker på, at du vil slette denne turnering?") },
             confirmButton = {
-                TextButton(onClick = { viewModel.deleteConfirmation.confirm() }) {
-                    Text("Slet", color = MaterialTheme.colorScheme.error)
-                }
+                Button(
+                    onClick = { viewModel.deleteConfirmation.confirm() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Slet") }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) {
-                    Text("Annuller")
-                }
-            }
+                TextButton(onClick = { viewModel.deleteConfirmation.dismiss() }) { Text("Annuller") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = MaterialTheme.shapes.large
         )
     }
 
-    Scaffold(
-        containerColor = Color.Transparent
-    ) { paddingValues ->
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        PadelOrange.copy(alpha = 0.15f),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                )
+            )
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(horizontal = 20.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Header
+            Text(
+                text = "Dine Turneringer",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Premium Segmented Tab Control
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                shadowElevation = 4.dp
             ) {
-                Text(
-                    text = "Dine Turneringer",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp)
                 ) {
-                    Tab(
-                        selected = selectedTabIndex == 0,
-                        onClick = { selectedTabIndex = 0 },
-                        text = { Text("I gang (${activeTournaments.size})") }
-                    )
-                    Tab(
-                        selected = selectedTabIndex == 1,
-                        onClick = { selectedTabIndex = 1 },
-                        text = { Text("Afsluttet (${completedTournaments.size})") }
-                    )
-                }
+                    listOf(
+                        "I gang (${activeTournaments.size})" to 0,
+                        "Afsluttet (${completedTournaments.size})" to 1
+                    ).forEach { (title, index) ->
+                        val selected = selectedTabIndex == index
+                        val bgColor by animateColorAsState(
+                            targetValue = if (selected) PadelOrange else Color.Transparent,
+                            animationSpec = tween(200)
+                        )
+                        val textColor by animateColorAsState(
+                            targetValue = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            animationSpec = tween(200)
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val currentTournaments = if (selectedTabIndex == 0) activeTournaments else completedTournaments
-
-                if (currentTournaments.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = if (selectedTabIndex == 0) Icons.Default.SportsTennis else Icons.Default.EmojiEvents,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = if (selectedTabIndex == 0) "Ingen aktive turneringer" else "Ingen afsluttede turneringer",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (selectedTabIndex == 0) {
+                        Surface(
+                            onClick = { selectedTabIndex = index },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(24.dp),
+                            color = bgColor
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            ) {
                                 Text(
-                                    text = "Tryk på + for at starte en ny kamp!",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = title,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = textColor
                                 )
                             }
                         }
                     }
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        items(currentTournaments.size) { index ->
-                            TournamentItemCard(
-                                tournament = currentTournaments[index],
-                                onClick = { onTournamentClicked(currentTournaments[index].id) },
-                                onDuplicate = { tournament ->
-                                    onDuplicateTournament?.invoke(tournament.type.name, tournament.id)
-                                },
-                                onDelete = { tournament -> viewModel.showDeleteConfirmationDialog(tournament) }
-                            )
-                        }
-                    }
                 }
             }
 
-            // Søgeknap i venstre hjørne
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Tournament List
+            val currentTournaments = if (selectedTabIndex == 0) activeTournaments else completedTournaments
+
+            if (currentTournaments.isEmpty()) {
+                EmptyStateView(selectedTabIndex)
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
+                    items(currentTournaments.size) { index ->
+                        GlassmorphismTournamentCard(
+                            tournament = currentTournaments[index],
+                            onClick = { onTournamentClicked(currentTournaments[index].id) },
+                            onDuplicate = { tournament ->
+                                onDuplicateTournament?.invoke(tournament.type.name, tournament.id)
+                            },
+                            onDelete = { tournament -> viewModel.showDeleteConfirmationDialog(tournament) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // FAB Row
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Search FAB
             FloatingActionButton(
                 onClick = onGoToSearchScreen,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                elevation = FloatingActionButtonDefaults.elevation(8.dp)
             ) {
-                Icon(Icons.Default.Search, contentDescription = "Søg turneringer")
+                Icon(Icons.Default.Search, contentDescription = "Søg")
             }
 
-            // Opret turnering knap i højre hjørne
-            FloatingActionButton(
+            // Create Tournament FAB
+            ExtendedFloatingActionButton(
                 onClick = onGoToTournamentScreen,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                containerColor = PadelOrange,
+                contentColor = Color.White,
+                elevation = FloatingActionButtonDefaults.elevation(8.dp),
+                icon = { Icon(Icons.Default.Add, "Opret") },
+                text = { Text("Ny Turnering", fontWeight = FontWeight.Bold) }
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyStateView(selectedTabIndex: Int) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 100.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Surface(
+                modifier = Modifier.size(100.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Opret Turnering")
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (selectedTabIndex == 0) Icons.Default.SportsTennis else Icons.Default.EmojiEvents,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = PadelOrange.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = if (selectedTabIndex == 0) "Ingen aktive turneringer" else "Ingen afsluttede turneringer",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (selectedTabIndex == 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Tryk 'Ny Turnering' for at starte",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
         }
     }
@@ -178,31 +246,27 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TournamentItemCard(
+fun GlassmorphismTournamentCard(
     tournament: Tournament,
     onClick: () -> Unit,
     onDuplicate: ((Tournament) -> Unit),
     onDelete: ((Tournament) -> Unit)? = null
 ) {
-    // Track whether we've already triggered duplicate to prevent re-triggering
     var hasDuplicated by remember { mutableStateOf(false) }
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    // Swipe til højre -> Dupliker turnering
-                    // Only trigger if we haven't already duplicated
                     if (!hasDuplicated) {
                         hasDuplicated = true
                         onDuplicate.invoke(tournament)
                     }
-                    false // Return false to prevent dismissal and reset state
+                    false
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
-                    // Swipe til venstre -> Slet turnering
                     onDelete?.invoke(tournament)
-                    false // Return false to prevent dismissal and reset state
+                    false
                 }
                 else -> false
             }
@@ -210,7 +274,6 @@ fun TournamentItemCard(
         positionalThreshold = { it * 0.25f }
     )
 
-    // Reset hasDuplicated flag when dismissState settles back
     LaunchedEffect(dismissState.currentValue) {
         if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
             hasDuplicated = false
@@ -219,93 +282,112 @@ fun TournamentItemCard(
 
     SwipeToDismissBox(
         state = dismissState,
-        backgroundContent = {
-            SwipeBackground(dismissState)
-        },
-        modifier = Modifier.fillMaxWidth()
+        backgroundContent = { SwipeBackground(dismissState) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
     ) {
-        Card(
+        // Glassmorphism Card
+        Surface(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 4.dp
         ) {
             Row(
                 modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Icon with gradient background
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = if (tournament.isCompleted)
+                                    listOf(WarmGold.copy(alpha = 0.8f), DeepAmber.copy(alpha = 0.6f))
+                                else
+                                    listOf(PadelOrange.copy(alpha = 0.8f), PadelOrangeLight.copy(alpha = 0.6f))
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         imageVector = if (tournament.isCompleted) Icons.Default.EmojiEvents else Icons.Default.SportsTennis,
                         contentDescription = null,
-                        tint = if (tournament.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(40.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = tournament.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Type Badge
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = PadelOrange.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = tournament.type.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PadelOrange,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         Text(
-                            text = tournament.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${tournament.type.name} • ${formatDate(tournament.dateCreated)}",
+                            text = formatDate(tournament.dateCreated),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (tournament.isCompleted) {
-                            // Din logik til at finde vindere
-                            val winners = tournament.players.let { players ->
-                                val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
-                                players.filter { it.totalPoints == maxPoints }.map { it.name }
-                            }
+                    }
 
-                            // Vis vinder-teksten fremhævet
-                            Text(
-                                text = buildString {
-                                    append("🏆 ")
-                                    append(if (winners.size > 1) "Vindere: " else "Vinder: ")
-                                    append(winners.joinToString(" & "))
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary, // Bruger appens primære farve
-                                maxLines = 1 // Sikrer at det ikke fylder for meget, hvis der er mange
-                            )
-                        } else {
-                            Text(
-                                text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Info row
+                    if (tournament.isCompleted) {
+                        val winners = tournament.players.let { players ->
+                            val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
+                            players.filter { it.totalPoints == maxPoints }.map { it.name }
                         }
-                        if (tournament.isCompleted) {
-                            Text(
-                                text = "Afsluttet",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
-                            Text(
-                                text = "I gang",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
+                        Text(
+                            text = "🏆 ${winners.joinToString(" & ")}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = WarmGold
+                        )
+                    } else {
+                        Text(
+                            text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Gå til turnering",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentDescription = null,
+                    tint = PadelOrange.copy(alpha = 0.6f),
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -315,12 +397,7 @@ fun TournamentItemCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
-
-    val offset = try {
-        dismissState.requireOffset()
-    } catch (e: Exception) {
-        0f
-    }
+    val offset = try { dismissState.requireOffset() } catch (e: Exception) { 0f }
 
     val direction = when {
         offset > 0f -> SwipeToDismissBoxValue.StartToEnd
@@ -328,47 +405,39 @@ fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
         else -> SwipeToDismissBoxValue.Settled
     }
 
-    val color = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
-        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
-        SwipeToDismissBoxValue.Settled -> Color.Transparent
+    val (color, icon, alignment) = when (direction) {
+        SwipeToDismissBoxValue.StartToEnd -> Triple(
+            SuccessGreen.copy(alpha = 0.9f),
+            Icons.Default.ContentCopy,
+            Alignment.CenterStart
+        )
+        SwipeToDismissBoxValue.EndToStart -> Triple(
+            ErrorRed.copy(alpha = 0.9f),
+            Icons.Default.Delete,
+            Alignment.CenterEnd
+        )
+        else -> Triple(Color.Transparent, null, Alignment.Center)
     }
 
-    val icon = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.ContentCopy
-        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
-        SwipeToDismissBoxValue.Settled -> null
-    }
-
-    val alignment = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-        SwipeToDismissBoxValue.Settled -> Alignment.Center
-    }
-    
     val alpha = (kotlin.math.abs(offset) / 100f).coerceIn(0f, 1f)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .clip(RoundedCornerShape(20.dp))
             .background(color)
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 24.dp),
         contentAlignment = alignment
     ) {
-        icon?.let {
+        if (icon != null) {
             Icon(
-                imageVector = it,
+                imageVector = icon,
                 contentDescription = null,
-                tint = when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimaryContainer
-                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onErrorContainer
-                    else -> Color.Transparent
-                },
+                tint = Color.White,
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(28.dp)
                     .graphicsLayer { this.alpha = alpha }
             )
         }
     }
 }
-

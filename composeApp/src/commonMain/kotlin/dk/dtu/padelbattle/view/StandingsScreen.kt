@@ -174,30 +174,27 @@ fun StandingsScreen(
                     StandingsLegend()
                 }
             }
-        }
 
-        // Fortsæt turnering knap - vises kun når turneringen er afsluttet
-        if (isCompleted) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onContinueTournament,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = if (isLoading) "Genererer ny runde..." else "Fortsæt turnering",
-                    fontWeight = FontWeight.Bold
-                )
+            // Fortsæt turnering knap - vises kun når turneringen er afsluttet
+            if (isCompleted) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onContinueTournament,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = if (isLoading) "Genererer ny runde..." else "Fortsæt turnering",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
-
-        // Forklaring af kolonner
-        StandingsLegend()
     }
 }
 

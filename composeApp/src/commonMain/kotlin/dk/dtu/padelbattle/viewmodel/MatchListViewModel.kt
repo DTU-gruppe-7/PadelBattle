@@ -2,6 +2,7 @@ package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
 import dk.dtu.padelbattle.model.Match
+import dk.dtu.padelbattle.model.Player
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +20,23 @@ class MatchListViewModel : ViewModel() {
 
     fun setCurrentRound(round: Int) {
         _currentRound.value = round
+    }
+
+    /**
+     * Beregner hvilke spillere der sidder over i en given runde.
+     * En spiller sidder over hvis de ikke deltager i nogen kamp i runden.
+     */
+    fun getSittingOutPlayers(allPlayers: List<Player>, roundMatches: List<Match>): List<Player> {
+        val playersInRound = roundMatches.flatMap { match ->
+            listOf(
+                match.team1Player1.id,
+                match.team1Player2.id,
+                match.team2Player1.id,
+                match.team2Player2.id
+            )
+        }.toSet()
+
+        return allPlayers.filter { player -> player.id !in playersInRound }
     }
 
     /**

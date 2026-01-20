@@ -12,6 +12,10 @@ import dk.dtu.padelbattle.model.TournamentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -38,6 +42,26 @@ class TournamentConfigViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    /**
+     * Minimum antal spillere baseret på antal baner (4 spillere per bane).
+     * Eksponeret som StateFlow for reaktiv UI opdatering.
+     */
+    val minimumPlayers: StateFlow<Int> = _numberOfCourts
+        .map { courts -> courts * 4 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
+
+    /**
+     * Om turneringen kan startes (har navn og nok spillere).
+     * Eksponeret som StateFlow for reaktiv UI opdatering.
+     */
+    val canStartTournament: StateFlow<Boolean> = combine(
+        _tournamentName,
+        _playerNames,
+        minimumPlayers
+    ) { name, players, minPlayers ->
+        name.isNotBlank() && players.size >= minPlayers
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun updateTournamentName(name: String) {
         _tournamentName.value = name
@@ -69,22 +93,11 @@ class TournamentConfigViewModel(
         if (index in currentList.indices) {
             currentList.removeAt(index)
             _playerNames.value = currentList
-
-            //Dette sikrer at vi ikke kan slwtte en spiller hvis det vil resultere i et ulovligt antal baner. Eksempelvis hvis man ville slette den 8. spiller og havde opgivet to baner
-            val maxAllowedCourts = calculateMaxCourts(currentList.size)
-            if (_numberOfCourts.value > maxAllowedCourts) {
-                _numberOfCourts.value = maxAllowedCourts
-            }
+            // Antal baner ændres IKKE automatisk - brugeren skal selv tilføje flere spillere
+            // for at opfylde minimum (numberOfCourts * 4 spillere)
         }
     }
 
-    private fun calculateMaxCourts(playerCount: Int): Int {
-        return (playerCount / 4).coerceAtLeast(1)
-    }
-
-    fun canStartTournament(): Boolean {
-        return _tournamentName.value.isNotBlank() && _playerNames.value.size >= 4
-    }
 
     /**
      * Opretter en turnering baseret på den valgte type og indtastede spillere.
@@ -92,8 +105,9 @@ class TournamentConfigViewModel(
      * Gemmer turneringen til databasen.
      */
     fun createTournament(tournamentType: TournamentType, onSuccess: (Tournament) -> Unit) {
-        if (!canStartTournament()) {
-            _error.value = "Ugyldig konfiguration: Kræver navn og 4-16 spillere"
+        if (!canStartTournament.value) {
+            val minPlayers = minimumPlayers.value
+            _error.value = "Ugyldig konfiguration: Kræver navn og mindst $minPlayers spillere for ${_numberOfCourts.value} baner"
             return
         }
 

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -127,6 +128,12 @@ fun MatchListScreen(
                     }
                 }
 
+                // Beregn spillere der sidder over i denne runde via ViewModel
+                val sittingOutPlayers = matchListViewModel.getSittingOutPlayers(
+                    allPlayers = currentTournament.players,
+                    roundMatches = currentRoundMatches
+                )
+
                 // Match List
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -141,6 +148,13 @@ fun MatchListScreen(
                                 showEditDialog = true
                             }
                         )
+                    }
+
+                    // Vis spillere der sidder over
+                    if (sittingOutPlayers.isNotEmpty()) {
+                        item {
+                            SittingOutCard(players = sittingOutPlayers.map { it.name })
+                        }
                     }
                 }
             }
@@ -326,3 +340,86 @@ private fun ScoreBox(
         }
     }
 }
+
+@Composable
+private fun SittingOutCard(players: List<String>) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column {
+            // Header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(vertical = 10.dp, horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "SIDDER OVER",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+            // Players
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                players.forEachIndexed { index, playerName ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Person ikon med "x" overlay
+                        Box(
+                            modifier = Modifier.size(18.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                tint = PadelOrange.copy(alpha = 0.7f)
+                            )
+                            // Lille "x" i nederste højre hjørne
+                            Text(
+                                text = "×",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = 2.dp, y = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = playerName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (index < players.size - 1) {
+                        Text(
+                            text = "  •  ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+

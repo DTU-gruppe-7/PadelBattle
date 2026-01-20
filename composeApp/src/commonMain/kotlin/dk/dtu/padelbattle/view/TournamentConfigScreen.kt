@@ -44,6 +44,10 @@ fun TournamentConfigScreen(
     val pointsPerRound by viewModel.pointsPerRound.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    // Hent minimum spillere og canStart fra ViewModel (reaktive StateFlows)
+    val minPlayers by viewModel.minimumPlayers.collectAsState()
+    val canStartTournament by viewModel.canStartTournament.collectAsState()
+
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
 
@@ -214,11 +218,11 @@ fun TournamentConfigScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // Player count indicator
+                    // Player count indicator - dynamisk minimum baseret på antal baner
                     val (countColor, countText) = when {
-                        playerNames.size < Tournament.MIN_PLAYERS -> 
-                            MaterialTheme.colorScheme.error to "Mindst ${Tournament.MIN_PLAYERS} spillere (${playerNames.size}/${Tournament.MIN_PLAYERS})"
-                        playerNames.size >= Tournament.MAX_PLAYERS -> 
+                        playerNames.size < minPlayers ->
+                            MaterialTheme.colorScheme.error to "Mindst $minPlayers spillere (${playerNames.size}/$minPlayers)"
+                        playerNames.size >= Tournament.MAX_PLAYERS ->
                             WarningAmber to "Maks ${Tournament.MAX_PLAYERS} spillere nået"
                         else -> 
                             SuccessGreen to "${playerNames.size} spillere tilføjet"
@@ -294,7 +298,7 @@ fun TournamentConfigScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = tournamentName.isNotBlank() && playerNames.size >= Tournament.MIN_PLAYERS,
+                enabled = canStartTournament,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PadelOrange,

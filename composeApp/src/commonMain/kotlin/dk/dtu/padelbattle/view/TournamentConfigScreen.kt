@@ -44,9 +44,9 @@ fun TournamentConfigScreen(
     val pointsPerRound by viewModel.pointsPerRound.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    // Beregn minimum spillere og canStart reaktivt baseret på state
-    val minPlayers = numberOfCourts * 4
-    val canStartTournament = tournamentName.isNotBlank() && playerNames.size >= minPlayers
+    // Hent minimum spillere og canStart fra ViewModel (reaktive StateFlows)
+    val minPlayers by viewModel.minimumPlayers.collectAsState()
+    val canStartTournament by viewModel.canStartTournament.collectAsState()
 
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }

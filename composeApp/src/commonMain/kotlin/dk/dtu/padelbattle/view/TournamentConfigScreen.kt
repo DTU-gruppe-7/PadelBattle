@@ -1,13 +1,15 @@
 package dk.dtu.padelbattle.view
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -19,11 +21,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
@@ -51,6 +56,10 @@ fun TournamentConfigScreen(
     var showCourtsDialog by remember { mutableStateOf(false) }
     var showPointsDialog by remember { mutableStateOf(false) }
 
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    val playerInputBringIntoView = remember { BringIntoViewRequester() }
+
     LaunchedEffect(duplicateFromId) {
         if (duplicateFromId != null) {
             viewModel.loadTournamentForDuplication(duplicateFromId)
@@ -69,12 +78,14 @@ fun TournamentConfigScreen(
                     )
                 )
             )
+            .imePadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Tournament Type Header Card
             Surface(
@@ -87,13 +98,13 @@ fun TournamentConfigScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Icon with gradient
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(48.dp)
                             .background(
                                 brush = Brush.linearGradient(
                                     colors = listOf(PadelOrange, DeepAmber)
@@ -106,7 +117,7 @@ fun TournamentConfigScreen(
                             imageVector = Icons.Default.SportsTennis,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                     
@@ -171,6 +182,7 @@ fun TournamentConfigScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .bringIntoViewRequester(playerInputBringIntoView)
                     .shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface
@@ -194,7 +206,16 @@ fun TournamentConfigScreen(
                             value = currentPlayerName,
                             onValueChange = { viewModel.updateCurrentPlayerName(it) },
                             label = { Text("Spillernavn") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .onFocusEvent { focusState ->
+                                    if (focusState.isFocused) {
+                                        coroutineScope.launch {
+                                            delay(300)
+                                            playerInputBringIntoView.bringIntoView()
+                                        }
+                                    }
+                                },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -238,8 +259,8 @@ fun TournamentConfigScreen(
             // Player List
             Surface(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
+                    .height(250.dp)
                     .shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface

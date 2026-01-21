@@ -54,6 +54,7 @@ class SettingsViewModel(
     // Reference til den aktuelle turnering (sættes fra updateScreen)
     private var currentTournament: Tournament? = null
     private var onTournamentUpdated: (() -> Unit)? = null
+    private var onCourtsChanged: (() -> Unit)? = null
 
     private val _showPointsDialog = MutableStateFlow(false)
     val showPointsDialog: StateFlow<Boolean> = _showPointsDialog.asStateFlow()
@@ -91,6 +92,7 @@ class SettingsViewModel(
         duplicateAction = null
         currentTournament = null
         onTournamentUpdated = null
+        onCourtsChanged = null
     }
 
     /**
@@ -115,14 +117,17 @@ class SettingsViewModel(
      * @param screen Den nuværende skærm
      * @param tournament Den aktuelle turnering (kun relevant for TournamentView)
      * @param onUpdate Callback når turneringen opdateres
+     * @param onCourtsUpdated Callback når antallet af baner ændres (brug dette til at resette til runde 1)
      */
     fun updateScreen(
         screen: Screen,
         tournament: Tournament? = null,
-        onUpdate: (() -> Unit)? = null
+        onUpdate: (() -> Unit)? = null,
+        onCourtsUpdated: (() -> Unit)? = null
     ) {
         currentTournament = tournament
         onTournamentUpdated = onUpdate
+        onCourtsChanged = onCourtsUpdated
 
         _menuItems.value = when (screen) {
             is TournamentView -> getTournamentViewMenuItems()
@@ -370,6 +375,9 @@ class SettingsViewModel(
                     // Hvis vi når hertil, er alle operationer lykkedes
                     // Notificer UI om ændringen
                     onTournamentUpdated?.invoke()
+
+                    // Notificer specifikt om at baner er ændret (så UI kan resette til runde 1)
+                    onCourtsChanged?.invoke()
 
                     // Skjul loading og luk dialog ved success
                     _isUpdatingCourts.value = false

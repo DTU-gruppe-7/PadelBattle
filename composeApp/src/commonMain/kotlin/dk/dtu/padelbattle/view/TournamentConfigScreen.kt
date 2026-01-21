@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -59,10 +60,21 @@ fun TournamentConfigScreen(
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     val playerInputBringIntoView = remember { BringIntoViewRequester() }
+    val playerListBringIntoView = remember { BringIntoViewRequester() }
+    val startButtonBringIntoView = remember { BringIntoViewRequester() }
+    val playerListState = rememberLazyListState()
 
     LaunchedEffect(duplicateFromId) {
         if (duplicateFromId != null) {
             viewModel.loadTournamentForDuplication(duplicateFromId)
+        }
+    }
+
+    // Scroll til bunden af spillerlisten når en ny spiller tilføjes
+    LaunchedEffect(playerNames.size) {
+        if (playerNames.isNotEmpty()) {
+            delay(50)
+            playerListState.scrollToItem(playerNames.size - 1)
         }
     }
 
@@ -84,27 +96,27 @@ fun TournamentConfigScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Tournament Type Header Card
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(8.dp, RoundedCornerShape(20.dp)),
-                shape = RoundedCornerShape(20.dp),
+                    .shadow(6.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Icon with gradient
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(40.dp)
                             .background(
                                 brush = Brush.linearGradient(
                                     colors = listOf(PadelOrange, DeepAmber)
@@ -117,25 +129,25 @@ fun TournamentConfigScreen(
                             imageVector = Icons.Default.SportsTennis,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                     
-                    Spacer(modifier = Modifier.width(16.dp))
-                    
+                    Spacer(modifier = Modifier.width(12.dp))
+
                     Column {
                         Text(
                             text = when (tournamentType) {
                                 TournamentType.AMERICANO -> "Americano"
                                 TournamentType.MEXICANO -> "Mexicano"
                             },
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Ny turnering",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -161,7 +173,7 @@ fun TournamentConfigScreen(
             // Settings Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PremiumSettingsCard(
                     title = "Baner",
@@ -187,20 +199,20 @@ fun TournamentConfigScreen(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(8.dp)) {
                     Text(
                         text = "Tilføj Spillere",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = PadelOrange
                     )
                     
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedTextField(
                             value = currentPlayerName,
@@ -211,13 +223,16 @@ fun TournamentConfigScreen(
                                 .onFocusEvent { focusState ->
                                     if (focusState.isFocused) {
                                         coroutineScope.launch {
-                                            delay(300)
-                                            playerInputBringIntoView.bringIntoView()
+                                            delay(100)
+                                            //playerInputBringIntoView.bringIntoView()
+                                            //playerListBringIntoView.bringIntoView()
+                                            startButtonBringIntoView.bringIntoView()
                                         }
                                     }
                                 },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
+                            textStyle = MaterialTheme.typography.bodyMedium,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PadelOrange,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -231,14 +246,15 @@ fun TournamentConfigScreen(
                                 containerColor = PadelOrange,
                                 contentColor = Color.White,
                                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            ),
+                            modifier = Modifier.size(48.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Tilføj")
+                            Icon(Icons.Default.Add, contentDescription = "Tilføj", modifier = Modifier.size(24.dp))
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     // Player count indicator - dynamisk minimum baseret på antal baner
                     val (countColor, countText) = when {
                         playerNames.size < minPlayers ->
@@ -260,7 +276,8 @@ fun TournamentConfigScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(250.dp)
+                    .height(220.dp)
+                    .bringIntoViewRequester(playerListBringIntoView)
                     .shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface
@@ -272,7 +289,7 @@ fun TournamentConfigScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Surface(
-                                modifier = Modifier.size(64.dp),
+                                modifier = Modifier.size(48.dp),
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             ) {
@@ -280,23 +297,24 @@ fun TournamentConfigScreen(
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
-                                        modifier = Modifier.size(32.dp),
+                                        modifier = Modifier.size(24.dp),
                                         tint = PadelOrange.copy(alpha = 0.5f)
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Ingen spillere endnu",
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        state = playerListState,
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         itemsIndexed(playerNames) { index, playerName ->
                             PremiumPlayerListItem(
@@ -318,7 +336,8 @@ fun TournamentConfigScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(50.dp)
+                    .bringIntoViewRequester(startButtonBringIntoView),
                 enabled = canStartTournament,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -407,7 +426,7 @@ private fun PremiumPlayerListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

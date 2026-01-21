@@ -134,7 +134,13 @@ fun App(
         settingsViewModel.updateScreen(
             screen = currentScreen,
             tournament = currentTournament,
-            onUpdate = { tournamentViewModel.notifyTournamentUpdated() }
+            onUpdate = { tournamentViewModel.notifyTournamentUpdated() },
+            onCourtsUpdated = {
+                // Når antallet af baner ændres, skal vi resette til runde 1
+                currentTournament?.let { tournament ->
+                    matchListViewModel.loadTournament(tournament.matches)
+                }
+            }
         )
 
         // Håndter navigation når turneringens navn ændres

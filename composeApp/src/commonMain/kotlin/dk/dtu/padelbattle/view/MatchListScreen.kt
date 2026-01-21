@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -93,7 +93,7 @@ fun MatchListScreen(
                                 disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                         ) {
-                            Icon(Icons.Default.ArrowBack, "Forrige runde")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Forrige runde")
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -123,7 +123,7 @@ fun MatchListScreen(
                                 disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                         ) {
-                            Icon(Icons.Default.ArrowForward, "Næste runde")
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Næste runde")
                         }
                     }
                 }

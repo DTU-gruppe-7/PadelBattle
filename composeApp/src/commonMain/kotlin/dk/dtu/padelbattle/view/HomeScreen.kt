@@ -261,28 +261,25 @@ fun GlassmorphismTournamentCard(
     var hasDuplicated by remember { mutableStateOf(false) }
 
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            when (dismissValue) {
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    if (!hasDuplicated) {
-                        hasDuplicated = true
-                        onDuplicate.invoke(tournament)
-                    }
-                    false
-                }
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete?.invoke(tournament)
-                    false
-                }
-                else -> false
-            }
-        },
         positionalThreshold = { it * 0.25f }
     )
 
     LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
-            hasDuplicated = false
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                if (!hasDuplicated) {
+                    hasDuplicated = true
+                    onDuplicate.invoke(tournament)
+                }
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.EndToStart -> {
+                onDelete?.invoke(tournament)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.Settled -> {
+                hasDuplicated = false
+            }
         }
     }
 

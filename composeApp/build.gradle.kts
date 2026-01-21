@@ -30,6 +30,19 @@ kotlin {
         }
     }
     
+    // Add compiler flag to suppress expect/actual classes warning for all Kotlin targets
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
+    }
+
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)

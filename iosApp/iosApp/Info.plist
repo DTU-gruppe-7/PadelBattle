@@ -4,5 +4,7 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>OS_ACTIVITY_MODE</key>
+	<string>disable</string>
 </dict>
 </plist>

@@ -1,6 +1,8 @@
 package dk.dtu.padelbattle.view.navigation
 
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.SportsTennis
@@ -22,23 +24,29 @@ fun BottomNavigationBar(
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 4.dp,
-        modifier = modifier.height(72.dp)
+        modifier = modifier
+            // Gør plads til home indicator / gesture bar, så indhold ikke bliver klippet
+            //.navigationBarsPadding()
+            // Lidt ekstra vertikal luft, især når font-scaling er slået til
+            //.padding(vertical = 4.dp)
+            // Undgå for lav fast højde
+            .heightIn(min = 60.dp)
     ) {
         NavigationBarItem(
             selected = selectedTab == 0,
             onClick = { onTabSelected(0) },
-            icon = { 
+            icon = {
                 Icon(
                     imageVector = if (selectedTab == 0) Icons.Filled.SportsTennis else Icons.Outlined.SportsTennis,
                     contentDescription = "Kampe"
-                ) 
+                )
             },
-            label = { 
+            label = {
                 Text(
-                    "Kampe", 
+                    "Kampe",
                     fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
                     style = MaterialTheme.typography.labelMedium
-                ) 
+                )
             },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = PadelOrange,
@@ -52,18 +60,18 @@ fun BottomNavigationBar(
         NavigationBarItem(
             selected = selectedTab == 1,
             onClick = { onTabSelected(1) },
-            icon = { 
+            icon = {
                 Icon(
                     imageVector = if (selectedTab == 1) Icons.Filled.EmojiEvents else Icons.Outlined.EmojiEvents,
                     contentDescription = "Stilling"
-                ) 
+                )
             },
-            label = { 
+            label = {
                 Text(
                     "Stilling",
                     fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
                     style = MaterialTheme.typography.labelMedium
-                ) 
+                )
             },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = PadelOrange,

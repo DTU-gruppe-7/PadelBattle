@@ -71,16 +71,22 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        PadelOrange.copy(alpha = 0.15f),
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    ) {
+        // Background layer that fills entire screen
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            PadelOrange.copy(alpha = 0.15f),
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
                     )
                 )
-            )
-    ) {
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -177,7 +183,7 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(start = 20.dp, end = 20.dp, bottom = 60.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Search FAB
@@ -255,28 +261,25 @@ fun GlassmorphismTournamentCard(
     var hasDuplicated by remember { mutableStateOf(false) }
 
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            when (dismissValue) {
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    if (!hasDuplicated) {
-                        hasDuplicated = true
-                        onDuplicate.invoke(tournament)
-                    }
-                    false
-                }
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete?.invoke(tournament)
-                    false
-                }
-                else -> false
-            }
-        },
         positionalThreshold = { it * 0.25f }
     )
 
     LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.Settled) {
-            hasDuplicated = false
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                if (!hasDuplicated) {
+                    hasDuplicated = true
+                    onDuplicate.invoke(tournament)
+                }
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.EndToStart -> {
+                onDelete?.invoke(tournament)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.Settled -> {
+                hasDuplicated = false
+            }
         }
     }
 

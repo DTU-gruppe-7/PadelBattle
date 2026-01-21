@@ -1,5 +1,6 @@
 package dk.dtu.padelbattle
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -163,6 +164,7 @@ fun App(
                 )
             },
             containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 // Vis kun bottom bar på TournamentView skærmen
                 if (currentScreen is TournamentView) {

@@ -78,7 +78,7 @@ fun MatchEditDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Bane ${match.courtNumber} - Runde ${match.roundNumber}",
+                    text = "Bane ${match.courtNumber}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -91,22 +91,6 @@ fun MatchEditDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Hold 1 (venstre side)
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Text(
-                            text = match.team1Player1.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = match.team1Player2.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
 
                     // Score inputs i midten
                     Row(
@@ -137,22 +121,6 @@ fun MatchEditDialog(
                         )
                     }
 
-                    // Hold 2 (højre side)
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Text(
-                            text = match.team2Player1.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = match.team2Player2.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

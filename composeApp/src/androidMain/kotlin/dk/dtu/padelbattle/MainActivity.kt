@@ -13,10 +13,17 @@ import java.util.UUID // Bruges til at lave unikke String ID'er
 import dk.dtu.padelbattle.data.entity.TournamentEntity
 import dk.dtu.padelbattle.data.entity.PlayerEntity
 import dk.dtu.padelbattle.data.getPadelBattleDatabase
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable edge-to-edge display and make system bars transparent
+        enableEdgeToEdge()
+
+        // Make system bars respect the dark theme
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         // Opret databasen her
         val database = getPadelBattleDatabase(applicationContext)

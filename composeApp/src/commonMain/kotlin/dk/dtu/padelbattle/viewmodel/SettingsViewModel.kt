@@ -250,11 +250,26 @@ class SettingsViewModel(
 
     /**
      * Anvender den nye points værdi på turneringen.
+     * Gemmer ændringen i databasen, så den gælder for alle resterende runder
+     * og eventuelle forlængelser af spillet.
      */
     private fun applyPointsChange(newPoints: Int) {
         val tournament = currentTournament ?: return
-        tournament.pointsPerMatch = newPoints
-        onTournamentUpdated?.invoke()
+
+        viewModelScope.launch {
+            try {
+                // Gem ændringen i databasen
+                tournamentDao.updatePointsPerMatch(tournament.id, newPoints)
+
+                // Opdater modellen
+                tournament.pointsPerMatch = newPoints
+
+                // Notificer UI om ændringen
+                onTournamentUpdated?.invoke()
+            } catch (e: Exception) {
+                _error.value = "Kunne ikke gemme ændring: ${e.message}"
+            }
+        }
     }
 
 

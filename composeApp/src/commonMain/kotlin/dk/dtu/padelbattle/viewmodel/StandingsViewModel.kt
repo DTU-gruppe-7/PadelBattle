@@ -30,6 +30,15 @@ class StandingsViewModel : ViewModel() {
     private val _players = MutableStateFlow<List<Player>>(emptyList())
     private val _pointsPerMatch = MutableStateFlow(16)
 
+    // ==================== Winner Celebration ====================
+
+    private val _showWinnerCelebration = MutableStateFlow(false)
+    val showWinnerCelebration: StateFlow<Boolean> = _showWinnerCelebration.asStateFlow()
+
+    // Holder styr på sidste vinder-ID for at vise popup igen ved ny vinder
+    private var lastWinnerId: String? = null
+    private var lastCompletedRevision: Int = -1
+
     /**
      * Sorterede spillere med bonus points - beregnes automatisk når _players eller _pointsPerMatch ændres.
      * 
@@ -63,10 +72,44 @@ class StandingsViewModel : ViewModel() {
     /**
      * Opdaterer listen af spillere og pointsPerMatch fra turneringen.
      * Bonus og sortering beregnes automatisk via sortedPlayers flow.
+     *
+     * @param players Liste af spillere
+     * @param pointsPerMatch Point per kamp
+     * @param isCompleted Om turneringen er afsluttet
+     * @param revision Turneringens revision - bruges til at detektere forlængelser
      */
-    fun setPlayers(players: List<Player>, pointsPerMatch: Int = 16) {
+    fun setPlayers(
+        players: List<Player>,
+        pointsPerMatch: Int = 16,
+        isCompleted: Boolean = false,
+        revision: Int = 0
+    ) {
         _pointsPerMatch.value = pointsPerMatch
         _players.value = players
+
+        // Tjek om vi skal vise vinder celebration
+        if (isCompleted && players.isNotEmpty()) {
+            val currentWinnerId = players.maxByOrNull { it.totalPoints }?.id
+
+            // Vis popup hvis:
+            // 1. Det er en ny afsluttet revision (turneringen blev lige afsluttet eller forlænget)
+            // 2. Eller vinderen har ændret sig
+            val isNewCompletion = revision != lastCompletedRevision
+            val isNewWinner = currentWinnerId != lastWinnerId
+
+            if (isNewCompletion || isNewWinner) {
+                lastWinnerId = currentWinnerId
+                lastCompletedRevision = revision
+                _showWinnerCelebration.value = true
+            }
+        }
+    }
+
+    /**
+     * Luk vinder celebration popup
+     */
+    fun dismissWinnerCelebration() {
+        _showWinnerCelebration.value = false
     }
 
     // ==================== Player Name Editing ====================

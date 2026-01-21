@@ -1,6 +1,5 @@
 package dk.dtu.padelbattle
 
-import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
@@ -190,7 +189,7 @@ class TournamentTest {
             name = "Too Many Players",
             type = TournamentType.AMERICANO,
             dateCreated = 0L,
-            players = createPlayers(17)
+            players = createPlayers(33) // MAX_PLAYERS is 32, so 33 should fail
         )
 
         assertFailsWith<IllegalStateException> {
@@ -215,7 +214,7 @@ class TournamentTest {
     }
 
     @Test
-    fun testMexicanoTournamentNotImplemented() {
+    fun testMexicanoTournamentImplemented() {
         val tournament = Tournament(
             name = "Mexicano Tournament",
             type = TournamentType.MEXICANO,
@@ -225,7 +224,8 @@ class TournamentTest {
 
         val result = tournament.startTournament()
 
-        assertFalse(result)
+        assertTrue(result)
+        assertTrue(tournament.matches.isNotEmpty())
     }
 
     @Test

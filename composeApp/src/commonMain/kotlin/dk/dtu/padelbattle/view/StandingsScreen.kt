@@ -35,6 +35,7 @@ import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.viewmodel.PlayerStanding
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.ui.theme.*
+import dk.dtu.padelbattle.view.components.WinnerCelebrationPopup
 
 @Composable
 fun StandingsScreen(
@@ -47,13 +48,19 @@ fun StandingsScreen(
     onPlayerNameChanged: (Player, String) -> Unit = { _, _ -> },  // Callback til at gemme navneændring
     onContinueTournament: () -> Unit = {}  // Callback til at fortsætte turneringen
 ) {
-    LaunchedEffect(players, revision, pointsPerMatch) {
-        viewModel.setPlayers(players.map { it.copy() }, pointsPerMatch)
+    LaunchedEffect(players, revision, pointsPerMatch, isCompleted) {
+        viewModel.setPlayers(
+            players = players.map { it.copy() },
+            pointsPerMatch = pointsPerMatch,
+            isCompleted = isCompleted,
+            revision = revision
+        )
     }
 
     val sortedPlayers by viewModel.sortedPlayers.collectAsState()
     val editingPlayer by viewModel.editingPlayer.collectAsState()
     val editingName by viewModel.editingName.collectAsState()
+    val showWinnerCelebration by viewModel.showWinnerCelebration.collectAsState()
 
     if (editingPlayer != null) {
         PlayerNameEditDialog(
@@ -195,6 +202,15 @@ fun StandingsScreen(
                 }
             }
         }
+
+        // Winner Celebration Popup - vises over alt andet
+        WinnerCelebrationPopup(
+            isVisible = showWinnerCelebration,
+            winner = sortedPlayers.getOrNull(0),
+            second = sortedPlayers.getOrNull(1),
+            third = sortedPlayers.getOrNull(2),
+            onDismiss = { viewModel.dismissWinnerCelebration() }
+        )
     }
 }
 

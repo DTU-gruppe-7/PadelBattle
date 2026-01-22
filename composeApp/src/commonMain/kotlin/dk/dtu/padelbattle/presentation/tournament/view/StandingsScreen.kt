@@ -130,7 +130,7 @@ fun StandingsScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "+Bonus",
+                        text = "+B",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -351,7 +351,7 @@ private fun StandingsLegend() {
             }
 
             LegendItem("W-L-D", "Vundne - Tabte - Uafgjorte")
-            LegendItem("+Bonus", "Pointkompensation for færre kampe")
+            LegendItem("+B", "Pointkompensation for færre kampe")
             LegendItem("Diff", "Difference fra førende spiller")
         }
     }

@@ -3,12 +3,13 @@ package dk.dtu.padelbattle.presentation.tournament.view
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +36,6 @@ fun MatchListScreen(
     var selectedMatchIndex by remember { mutableStateOf(0) }
 
     val currentRound by contentViewModel.currentRound.collectAsState()
-    val revision by contentViewModel.revision.collectAsState()
 
     LaunchedEffect(matches) {
         contentViewModel.updateMatches(matches)
@@ -44,115 +44,117 @@ fun MatchListScreen(
     val maxRound = matches.maxOfOrNull { it.roundNumber } ?: 1
     val minRound = matches.minOfOrNull { it.roundNumber } ?: 1
     val currentRoundMatches = matches.filter { it.roundNumber == currentRound }
+    
+    // Bevar scroll position på tværs af match opdateringer
+    val listState = rememberLazyListState()
 
-    key(revision) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            PadelOrange.copy(alpha = 0.15f),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        PadelOrange.copy(alpha = 0.15f),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     )
                 )
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            Column(
+            // Round Navigation Header
+            Surface(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                    .shadow(6.dp, RoundedCornerShape(20.dp)),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface
             ) {
-                // Round Navigation Header
-                Surface(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                        .shadow(6.dp, RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surface
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    IconButton(
+                        onClick = {
+                            val newRound = (currentRound - 1).coerceAtLeast(minRound)
+                            contentViewModel.setCurrentRound(newRound)
+                        },
+                        enabled = currentRound > minRound,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = PadelOrange,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
                     ) {
-                        IconButton(
-                            onClick = {
-                                val newRound = (currentRound - 1).coerceAtLeast(minRound)
-                                contentViewModel.setCurrentRound(newRound)
-                            },
-                            enabled = currentRound > minRound,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = PadelOrange,
-                                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Forrige runde")
-                        }
-
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "RUNDE",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = PadelOrange,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 2.sp
-                            )
-                            Text(
-                                text = "$currentRound",
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                val newRound = (currentRound + 1).coerceAtMost(maxRound)
-                                contentViewModel.setCurrentRound(newRound)
-                            },
-                            enabled = currentRound < maxRound,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = PadelOrange,
-                                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Næste runde")
-                        }
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Forrige runde")
                     }
-                }
 
-                // Beregn spillere der sidder over i denne runde via ViewModel
-                val sittingOutPlayers = contentViewModel.getSittingOutPlayers(
-                    allPlayers = currentTournament.players,
-                    roundMatches = currentRoundMatches
-                )
-
-                // Match List
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(currentRoundMatches.size) { index ->
-                        val match = currentRoundMatches[index]
-                        PremiumMatchCard(
-                            match = match,
-                            onEditClick = {
-                                selectedMatchIndex = matches.indexOfFirst { it.id == match.id }
-                                showEditDialog = true
-                            }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "RUNDE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PadelOrange,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp
+                        )
+                        Text(
+                            text = "$currentRound",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
-                    // Vis spillere der sidder over
-                    if (sittingOutPlayers.isNotEmpty()) {
-                        item {
-                            SittingOutCard(players = sittingOutPlayers.map { it.name })
+                    IconButton(
+                        onClick = {
+                            val newRound = (currentRound + 1).coerceAtMost(maxRound)
+                            contentViewModel.setCurrentRound(newRound)
+                        },
+                        enabled = currentRound < maxRound,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = PadelOrange,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, "Næste runde")
+                    }
+                }
+            }
+
+            // Beregn spillere der sidder over i denne runde via ViewModel
+            val sittingOutPlayers = contentViewModel.getSittingOutPlayers(
+                allPlayers = currentTournament.players,
+                roundMatches = currentRoundMatches
+            )
+
+            // Match List
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                items(currentRoundMatches.size) { index ->
+                    val match = currentRoundMatches[index]
+                    PremiumMatchCard(
+                        match = match,
+                        onEditClick = {
+                            selectedMatchIndex = matches.indexOfFirst { it.id == match.id }
+                            showEditDialog = true
                         }
+                    )
+                }
+
+                // Vis spillere der sidder over
+                if (sittingOutPlayers.isNotEmpty()) {
+                    item {
+                        SittingOutCard(players = sittingOutPlayers.map { it.name })
                     }
                 }
             }
@@ -341,83 +343,25 @@ private fun ScoreBox(
 
 @Composable
 private fun SittingOutCard(players: List<String>) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            // Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(vertical = 10.dp, horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "SIDDER OVER",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-
-            // Players
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                players.forEachIndexed { index, playerName ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Person ikon med "x" overlay
-                        Box(
-                            modifier = Modifier.size(18.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                tint = PadelOrange.copy(alpha = 0.7f)
-                            )
-                            // Lille "x" i nederste højre hjørne
-                            Text(
-                                text = "×",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .offset(x = 2.dp, y = 2.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = playerName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    if (index < players.size - 1) {
-                        Text(
-                            text = "  •  ",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-            }
-        }
+        Icon(
+            imageVector = Icons.Default.PersonOff,
+            contentDescription = "Sidder over",
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = players.joinToString(", "),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

@@ -11,20 +11,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dk.dtu.padelbattle.ui.theme.PadelBattleTheme
-import dk.dtu.padelbattle.view.SettingsDialogs
-import dk.dtu.padelbattle.view.navigation.BottomNavigationBar
-import dk.dtu.padelbattle.view.navigation.NavigationGraph
-import dk.dtu.padelbattle.view.navigation.NavigationManager
-import dk.dtu.padelbattle.view.navigation.NavigationManagerEffects
-import dk.dtu.padelbattle.view.navigation.TopBar
-import dk.dtu.padelbattle.view.navigation.TournamentView
-import dk.dtu.padelbattle.view.navigation.getCurrentScreen
-import dk.dtu.padelbattle.viewmodel.HomeViewModel
-import dk.dtu.padelbattle.viewmodel.MatchListViewModel
-import dk.dtu.padelbattle.viewmodel.SettingsViewModel
-import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
-import dk.dtu.padelbattle.viewmodel.TournamentViewModel
+import dk.dtu.padelbattle.presentation.theme.PadelBattleTheme
+import dk.dtu.padelbattle.presentation.tournament.settings.SettingsDialogs
+import dk.dtu.padelbattle.presentation.navigation.BottomNavigationBar
+import dk.dtu.padelbattle.presentation.navigation.NavigationGraph
+import dk.dtu.padelbattle.presentation.navigation.NavigationManager
+import dk.dtu.padelbattle.presentation.navigation.NavigationManagerEffects
+import dk.dtu.padelbattle.presentation.navigation.TopBar
+import dk.dtu.padelbattle.presentation.navigation.TournamentView
+import dk.dtu.padelbattle.presentation.navigation.getCurrentScreen
+import dk.dtu.padelbattle.presentation.home.HomeViewModel
+import dk.dtu.padelbattle.presentation.tournament.view.TournamentContentViewModel
+import dk.dtu.padelbattle.presentation.tournament.settings.SettingsViewModel
+import dk.dtu.padelbattle.presentation.tournament.config.TournamentConfigViewModel
+import dk.dtu.padelbattle.presentation.tournament.view.TournamentViewModel
 import org.koin.compose.koinInject
 
 /**
@@ -36,7 +36,7 @@ fun App() {
     val homeViewModel: HomeViewModel = koinInject()
     val tournamentConfigViewModel: TournamentConfigViewModel = koinInject()
     val tournamentViewModel: TournamentViewModel = koinInject()
-    val matchListViewModel: MatchListViewModel = koinInject()
+    val contentViewModel: TournamentContentViewModel = koinInject()
     val settingsViewModel: SettingsViewModel = koinInject()
 
     PadelBattleTheme {
@@ -50,7 +50,7 @@ fun App() {
                 homeViewModel = homeViewModel,
                 tournamentViewModel = tournamentViewModel,
                 tournamentConfigViewModel = tournamentConfigViewModel,
-                matchListViewModel = matchListViewModel,
+                contentViewModel = contentViewModel,
                 settingsViewModel = settingsViewModel
             )
         }

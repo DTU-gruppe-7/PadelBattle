@@ -1,6 +1,6 @@
 package dk.dtu.padelbattle
 
-import dk.dtu.padelbattle.model.Player
+import dk.dtu.padelbattle.domain.model.Player
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals

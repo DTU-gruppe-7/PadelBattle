@@ -1,11 +1,11 @@
 package dk.dtu.padelbattle
 
 import dk.dtu.padelbattle.data.repository.TournamentRepository
-import dk.dtu.padelbattle.model.Match
-import dk.dtu.padelbattle.model.MatchResult
-import dk.dtu.padelbattle.model.Player
-import dk.dtu.padelbattle.model.Tournament
-import dk.dtu.padelbattle.model.utils.MatchResultService
+import dk.dtu.padelbattle.domain.model.Match
+import dk.dtu.padelbattle.domain.model.MatchResult
+import dk.dtu.padelbattle.domain.model.Player
+import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.service.MatchResultService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest

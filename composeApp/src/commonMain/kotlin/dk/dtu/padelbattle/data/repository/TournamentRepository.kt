@@ -1,8 +1,8 @@
 package dk.dtu.padelbattle.data.repository
 
-import dk.dtu.padelbattle.model.Match
-import dk.dtu.padelbattle.model.Player
-import dk.dtu.padelbattle.model.Tournament
+import dk.dtu.padelbattle.domain.model.Match
+import dk.dtu.padelbattle.domain.model.Player
+import dk.dtu.padelbattle.domain.model.Tournament
 import kotlinx.coroutines.flow.Flow
 
 /**

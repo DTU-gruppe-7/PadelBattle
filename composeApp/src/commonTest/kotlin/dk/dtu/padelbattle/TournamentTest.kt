@@ -1,8 +1,8 @@
 package dk.dtu.padelbattle
 
-import dk.dtu.padelbattle.model.Player
-import dk.dtu.padelbattle.model.Tournament
-import dk.dtu.padelbattle.model.TournamentType
+import dk.dtu.padelbattle.domain.model.Player
+import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.model.TournamentType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

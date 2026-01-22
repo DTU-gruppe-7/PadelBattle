@@ -6,10 +6,10 @@ import dk.dtu.padelbattle.data.dao.TournamentDao
 import dk.dtu.padelbattle.data.entity.MatchEntity
 import dk.dtu.padelbattle.data.entity.PlayerEntity
 import dk.dtu.padelbattle.data.entity.TournamentEntity
-import dk.dtu.padelbattle.model.Match
-import dk.dtu.padelbattle.model.Player
-import dk.dtu.padelbattle.model.Tournament
-import dk.dtu.padelbattle.model.TournamentType
+import dk.dtu.padelbattle.domain.model.Match
+import dk.dtu.padelbattle.domain.model.Player
+import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.model.TournamentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

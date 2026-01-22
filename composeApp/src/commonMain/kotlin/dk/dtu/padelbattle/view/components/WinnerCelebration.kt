@@ -382,7 +382,7 @@ fun WinnerCelebrationPopup(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ) { /* Forhindre at klik på popup lukker den */ },
+                    ) { onDismiss() },
                 shape = RoundedCornerShape(24.dp),
                 color = Color.Transparent
             ) {

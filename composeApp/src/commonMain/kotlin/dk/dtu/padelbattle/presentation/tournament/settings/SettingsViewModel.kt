@@ -206,10 +206,6 @@ class SettingsViewModel(
         }
     }
 
-    fun setCustomMenuItems(items: List<SettingsMenuItem>?) {
-        _menuItems.value = items
-    }
-
     fun dismissPointsDialog() {
         _showPointsDialog.value = false
     }

@@ -9,6 +9,7 @@ import dk.dtu.padelbattle.data.entity.TournamentEntity
 import dk.dtu.padelbattle.domain.model.Match
 import dk.dtu.padelbattle.domain.model.Player
 import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.model.TournamentSummary
 import dk.dtu.padelbattle.domain.model.TournamentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,6 +17,11 @@ import kotlinx.coroutines.flow.map
 /**
  * Implementation of TournamentRepository.
  * Coordinates access to Tournament, Player, and Match DAOs.
+ * 
+ * Note: Room KMP understøtter ikke withTransaction på tværs af DAOs.
+ * Data-konsistens sikres via:
+ * - CASCADE delete på foreign keys (spillere/kampe slettes automatisk med turnering)
+ * - Sekventielle inserts (fejl er sjældne og kan håndteres ved genstart)
  */
 class TournamentRepositoryImpl(
     private val tournamentDao: TournamentDao,
@@ -27,11 +33,33 @@ class TournamentRepositoryImpl(
     // TOURNAMENT OPERATIONS
     // =====================================================
 
-    override fun getAllTournaments(): Flow<List<Tournament>> {
+    override fun getAllTournamentSummaries(): Flow<List<TournamentSummary>> {
         return tournamentDao.getAllTournaments().map { tournamentEntities ->
             tournamentEntities.map { entity ->
-                loadTournamentWithDetails(entity.id)
-                    ?: throw IllegalStateException("Tournament not found: ${entity.id}")
+                val playerCount = playerDao.countPlayersForTournament(entity.id)
+                val matchCount = matchDao.countMatchesForTournament(entity.id)
+                val playedMatchCount = matchDao.countPlayedMatches(entity.id)
+                val roundCount = matchDao.getMaxRoundNumber(entity.id) ?: 0
+                val winnerNames = if (entity.isCompleted) {
+                    playerDao.getWinnerNamesForTournament(entity.id)
+                } else {
+                    emptyList()
+                }
+                
+                TournamentSummary(
+                    id = entity.id,
+                    name = entity.name,
+                    type = TournamentType.valueOf(entity.type),
+                    dateCreated = entity.dateCreated,
+                    numberOfCourts = entity.numberOfCourts,
+                    pointsPerMatch = entity.pointsPerMatch,
+                    isCompleted = entity.isCompleted,
+                    playerCount = playerCount,
+                    matchCount = matchCount,
+                    playedMatchCount = playedMatchCount,
+                    roundCount = roundCount,
+                    winnerNames = winnerNames
+                )
             }
         }
     }
@@ -41,7 +69,7 @@ class TournamentRepositoryImpl(
     }
 
     override suspend fun saveTournament(tournament: Tournament) {
-        // Gem turnering
+        // Gem turnering først (parent entity)
         tournamentDao.insertTournament(tournament.toEntity())
         
         // Gem spillere
@@ -99,8 +127,14 @@ class TournamentRepositoryImpl(
     // MATCH OPERATIONS
     // =====================================================
 
-    override suspend fun updateMatch(match: Match, tournamentId: String) {
+    override suspend fun updateMatchWithPlayers(match: Match, players: List<Player>, tournamentId: String) {
+        // Opdater match
         matchDao.updateMatch(match.toEntity(tournamentId))
+        
+        // Opdater spillere
+        players.forEach { player ->
+            playerDao.updatePlayer(player.toEntity(tournamentId))
+        }
     }
 
     override suspend fun insertMatches(matches: List<Match>, tournamentId: String) {

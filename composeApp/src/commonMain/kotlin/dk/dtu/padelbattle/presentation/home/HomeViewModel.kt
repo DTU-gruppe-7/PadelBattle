@@ -3,7 +3,7 @@ package dk.dtu.padelbattle.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.repository.TournamentRepository
-import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.model.TournamentSummary
 import dk.dtu.padelbattle.presentation.common.DeleteConfirmationHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,8 +20,11 @@ class HomeViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // Henter alle turneringer via repository
-    val tournaments: StateFlow<List<Tournament>> = repository.getAllTournaments()
+    /**
+     * Henter alle turneringer som letvægts-summaries.
+     * Mere effektivt end at loade alle spillere og kampe for hver turnering.
+     */
+    val tournaments: StateFlow<List<TournamentSummary>> = repository.getAllTournamentSummaries()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -42,7 +45,7 @@ class HomeViewModel(
     /**
      * Viser bekræftelsesdialog for sletning af turnering.
      */
-    fun showDeleteConfirmationDialog(tournament: Tournament) {
+    fun showDeleteConfirmationDialog(tournament: TournamentSummary) {
         deleteConfirmation.show {
             viewModelScope.launch {
                 try {

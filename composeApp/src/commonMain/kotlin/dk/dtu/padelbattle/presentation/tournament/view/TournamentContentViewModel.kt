@@ -95,22 +95,6 @@ class TournamentContentViewModel : ViewModel() {
         _revision.value++
     }
 
-    /**
-     * Navigerer til den første uspillede runde.
-     * Bruges efter at turneringen er blevet udvidet med nye runder.
-     */
-    fun navigateToFirstUnplayedRound() {
-        val firstUnplayedMatch = _matches.value
-            .sortedBy { it.roundNumber }
-            .firstOrNull { !it.isPlayed }
-
-        val targetRound = firstUnplayedMatch?.roundNumber
-            ?: _matches.value.maxOfOrNull { it.roundNumber }
-            ?: 1
-
-        _currentRound.value = targetRound
-    }
-
     // ==================== Standings (tidligere StandingsViewModel) ====================
 
     private val _players = MutableStateFlow<List<Player>>(emptyList())
@@ -240,5 +224,32 @@ class TournamentContentViewModel : ViewModel() {
             onSave(player, newName)
         }
         cancelEditing()
+    }
+
+    // ==================== Reset ====================
+
+    /**
+     * Nulstiller al state i ViewModel.
+     * Bruges når man navigerer væk fra en turnering for at undgå stale data
+     * og forvirrende winner celebration ved næste turnering.
+     */
+    fun reset() {
+        // Match state
+        _matches.value = emptyList()
+        _revision.value = 0
+        _currentRound.value = 1
+        
+        // Player/standings state
+        _players.value = emptyList()
+        _pointsPerMatch.value = 16
+        
+        // Winner celebration state
+        _showWinnerCelebration.value = false
+        lastWinnerId = null
+        lastCompletedRevision = -1
+        
+        // Player editing state
+        _editingPlayer.value = null
+        _editingName.value = ""
     }
 }

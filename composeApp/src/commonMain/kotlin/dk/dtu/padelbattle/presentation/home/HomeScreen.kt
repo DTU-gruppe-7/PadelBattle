@@ -1,7 +1,6 @@
 package dk.dtu.padelbattle.presentation.home
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,15 +20,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.model.TournamentSummary
 import dk.dtu.padelbattle.domain.util.formatDate
-import dk.dtu.padelbattle.presentation.home.HomeViewModel
 import dk.dtu.padelbattle.presentation.theme.*
 
 @Composable
@@ -252,10 +249,10 @@ fun EmptyStateView(selectedTabIndex: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GlassmorphismTournamentCard(
-    tournament: Tournament,
+    tournament: TournamentSummary,
     onClick: () -> Unit,
-    onDuplicate: ((Tournament) -> Unit),
-    onDelete: ((Tournament) -> Unit)? = null
+    onDuplicate: ((TournamentSummary) -> Unit),
+    onDelete: ((TournamentSummary) -> Unit)? = null
 ) {
     var hasDuplicated by remember { mutableStateOf(false) }
 
@@ -365,20 +362,16 @@ fun GlassmorphismTournamentCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     // Info row
-                    if (tournament.isCompleted) {
-                        val winners = tournament.players.let { players ->
-                            val maxPoints = players.maxOfOrNull { it.totalPoints } ?: 0
-                            players.filter { it.totalPoints == maxPoints }.map { it.name }
-                        }
+                    if (tournament.isCompleted && tournament.winnerNames.isNotEmpty()) {
                         Text(
-                            text = "🏆 ${winners.joinToString(" & ")}",
+                            text = "🏆 ${tournament.winnerNames.joinToString(" & ")}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = WarmGold
                         )
                     } else {
                         Text(
-                            text = "${tournament.players.size} spillere • ${tournament.matches.maxOfOrNull { it.roundNumber } ?: 0} runder",
+                            text = "${tournament.playerCount} spillere • ${tournament.roundCount} runder",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

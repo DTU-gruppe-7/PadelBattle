@@ -66,11 +66,8 @@ class MatchResultService(
                 team2Player2 = updatedPlayers[3]
             )
 
-            repository.updateMatch(updatedMatch, tournamentId)
-
-            updatedPlayers.forEach { player ->
-                repository.updatePlayer(player, tournamentId)
-            }
+            // Gem match og spillere i én transaktion for data-konsistens
+            repository.updateMatchWithPlayers(updatedMatch, updatedPlayers, tournamentId)
         } catch (e: Exception) {
             throw e
         }

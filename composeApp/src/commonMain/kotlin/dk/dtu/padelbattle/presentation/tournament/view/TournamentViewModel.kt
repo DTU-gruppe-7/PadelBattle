@@ -8,8 +8,11 @@ import dk.dtu.padelbattle.domain.model.Tournament
 import dk.dtu.padelbattle.domain.model.TournamentType
 import dk.dtu.padelbattle.presentation.common.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class TournamentViewModel(
@@ -37,17 +40,46 @@ class TournamentViewModel(
         data object PlayerUpdated : OperationResult()
     }
 
-    // Backwards-compatible properties (kan fjernes når UI er opdateret)
-    val isLoading: StateFlow<Boolean> get() = MutableStateFlow(
-        _operationState.value is UiState.Loading
-    )
+    // Backwards-compatible derived properties fra operationState
+    // Disse er reaktive og opdateres automatisk når operationState ændres
+    val isLoading: StateFlow<Boolean> = _operationState
+        .map { it is UiState.Loading }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val error: StateFlow<String?> get() = MutableStateFlow(
-        (_operationState.value as? UiState.Error)?.message
-    )
+    val error: StateFlow<String?> = _operationState
+        .map { (it as? UiState.Error)?.message }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun setTournament(tournament: Tournament) {
         _tournament.value = tournament
+    }
+
+    /**
+     * Loader en turnering fra databasen baseret på ID og sætter den som aktuel.
+     * Bruges ved navigation fra HomeScreen hvor kun summary er tilgængelig.
+     * 
+     * @param tournamentId ID på turneringen
+     * @param onLoaded Callback med turneringens navn (til navigation)
+     */
+    fun loadTournamentById(tournamentId: String, onLoaded: (String?) -> Unit) {
+        _operationState.value = UiState.Loading
+        
+        viewModelScope.launch {
+            try {
+                val tournament = repository.getTournamentById(tournamentId)
+                if (tournament != null) {
+                    _tournament.value = tournament
+                    _operationState.value = UiState.Success(OperationResult.TournamentReloaded)
+                    onLoaded(tournament.name)
+                } else {
+                    _operationState.value = UiState.Error("Turnering ikke fundet")
+                    onLoaded(null)
+                }
+            } catch (e: Exception) {
+                _operationState.value = UiState.Error("Kunne ikke loade turnering: ${e.message}", e)
+                onLoaded(null)
+            }
+        }
     }
 
     /**
@@ -113,9 +145,14 @@ class TournamentViewModel(
         _operationState.value = UiState.Success(OperationResult.Idle)
     }
 
-    @Deprecated("Brug clearOperationState() i stedet", ReplaceWith("clearOperationState()"))
-    fun clearError() {
-        clearOperationState()
+    /**
+     * Nulstiller al state i ViewModel.
+     * Bruges når man navigerer væk fra en turnering for at undgå stale data.
+     */
+    fun reset() {
+        _tournament.value = null
+        _revision.value = 0
+        _operationState.value = UiState.Success(OperationResult.Idle)
     }
 
     /**

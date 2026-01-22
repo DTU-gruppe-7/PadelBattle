@@ -28,7 +28,7 @@ class MatchResultServiceTest {
         val updatedMatches = mutableListOf<Pair<Match, String>>()
         val updatedPlayers = mutableListOf<Pair<Player, String>>()
 
-        override fun getAllTournaments(): Flow<List<Tournament>> = flowOf(emptyList())
+        override fun getAllTournamentSummaries() = flowOf(emptyList<dk.dtu.padelbattle.domain.model.TournamentSummary>())
         override suspend fun getTournamentById(tournamentId: String): Tournament? = null
         override suspend fun saveTournament(tournament: Tournament) {}
         override suspend fun updateTournamentName(tournamentId: String, newName: String) {}
@@ -40,8 +40,11 @@ class MatchResultServiceTest {
         override suspend fun decrementExtensionRounds(tournamentId: String): Boolean = true
         override suspend fun clearExtensionTracking(tournamentId: String) {}
         
-        override suspend fun updateMatch(match: Match, tournamentId: String) {
+        override suspend fun updateMatchWithPlayers(match: Match, players: List<Player>, tournamentId: String) {
             updatedMatches.add(match to tournamentId)
+            players.forEach { player ->
+                updatedPlayers.add(player to tournamentId)
+            }
         }
         
         override suspend fun insertMatches(matches: List<Match>, tournamentId: String) {}

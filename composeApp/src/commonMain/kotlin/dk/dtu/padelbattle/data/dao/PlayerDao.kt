@@ -6,13 +6,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import dk.dtu.padelbattle.data.entity.PlayerEntity
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PlayerDao {
-
-    @Query("SELECT * FROM players WHERE tournamentId = :tournamentId ORDER BY totalPoints DESC")
-    fun getPlayersByTournament(tournamentId: String): Flow<List<PlayerEntity>>
 
     @Query("SELECT * FROM players WHERE tournamentId = :tournamentId ORDER BY totalPoints DESC")
     suspend fun getPlayersByTournamentOnce(tournamentId: String): List<PlayerEntity>
@@ -20,21 +16,24 @@ interface PlayerDao {
     @Query("SELECT * FROM players WHERE tournamentId = :tournamentId ORDER BY name ASC")
     suspend fun getPlayersForTournament(tournamentId: String): List<PlayerEntity>
 
-    @Query("SELECT * FROM players WHERE id = :id")
-    suspend fun getPlayerById(id: String): PlayerEntity?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPlayer(player: PlayerEntity)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlayers(players: List<PlayerEntity>)
 
     @Update
     suspend fun updatePlayer(player: PlayerEntity)
 
-    @Query("UPDATE players SET totalPoints = :points, gamesPlayed = :gamesPlayed WHERE id = :playerId")
-    suspend fun updatePlayerScore(playerId: String, points: Int, gamesPlayed: Int)
+    @Query("SELECT COUNT(*) FROM players WHERE tournamentId = :tournamentId")
+    suspend fun countPlayersForTournament(tournamentId: String): Int
 
-    @Query("DELETE FROM players WHERE tournamentId = :tournamentId")
-    suspend fun deletePlayersByTournament(tournamentId: String)
+    /**
+     * Henter navne på spillere med højest points i en turnering (vindere).
+     * Returnerer kun navne, ikke hele Player-objekter.
+     */
+    @Query("""
+        SELECT name FROM players 
+        WHERE tournamentId = :tournamentId 
+        AND totalPoints = (SELECT MAX(totalPoints) FROM players WHERE tournamentId = :tournamentId)
+        ORDER BY name
+    """)
+    suspend fun getWinnerNamesForTournament(tournamentId: String): List<String>
 }

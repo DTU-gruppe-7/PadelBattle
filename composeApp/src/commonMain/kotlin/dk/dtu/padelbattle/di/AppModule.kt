@@ -25,7 +25,13 @@ import org.koin.dsl.module
  */
 val appModule = module {
     // Repository (singleton - én instans for hele app-sessionen)
-    singleOf(::TournamentRepositoryImpl) bind TournamentRepository::class
+    single<TournamentRepository> { 
+        TournamentRepositoryImpl(
+            tournamentDao = get(),
+            playerDao = get(),
+            matchDao = get()
+        )
+    }
 
     // Services (singleton)
     single { MatchResultService(get()) }

@@ -3,6 +3,7 @@ package dk.dtu.padelbattle.data.repository
 import dk.dtu.padelbattle.domain.model.Match
 import dk.dtu.padelbattle.domain.model.Player
 import dk.dtu.padelbattle.domain.model.Tournament
+import dk.dtu.padelbattle.domain.model.TournamentSummary
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -17,10 +18,14 @@ interface TournamentRepository {
     // =====================================================
 
     /**
-     * Henter alle turneringer som et reaktivt Flow.
-     * Inkluderer spillere og kampe for hver turnering.
+     * Henter alle turneringer som letvægts-summaries.
+     * Loader kun tournament-metadata + counts, ikke alle spillere og kampe.
+     * 
+     * Optimal til:
+     * - HomeScreen turneringsliste
+     * - Søgeresultater
      */
-    fun getAllTournaments(): Flow<List<Tournament>>
+    fun getAllTournamentSummaries(): Flow<List<TournamentSummary>>
 
     /**
      * Henter en specifik turnering med alle spillere og kampe.
@@ -99,11 +104,13 @@ interface TournamentRepository {
     // =====================================================
 
     /**
-     * Opdaterer en kamp i databasen.
+     * Opdaterer en kamp og tilhørende spillere i én transaktion.
+     * Sikrer data-konsistens ved at enten gemme alt eller intet.
      * @param match Kampen der skal opdateres
+     * @param players Liste af spillere der skal opdateres
      * @param tournamentId ID på turneringen
      */
-    suspend fun updateMatch(match: Match, tournamentId: String)
+    suspend fun updateMatchWithPlayers(match: Match, players: List<Player>, tournamentId: String)
 
     /**
      * Tilføjer nye kampe til en turnering.

@@ -32,7 +32,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import dk.dtu.padelbattle.domain.model.Tournament
 import dk.dtu.padelbattle.domain.model.TournamentType
-import dk.dtu.padelbattle.presentation.tournament.config.TournamentConfigViewModel
 import dk.dtu.padelbattle.presentation.theme.*
 
 @Composable

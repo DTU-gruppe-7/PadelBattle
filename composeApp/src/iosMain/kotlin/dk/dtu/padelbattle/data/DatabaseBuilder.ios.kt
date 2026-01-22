@@ -9,18 +9,26 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
-
-fun getPadelBattleDatabase(): PadelBattleDatabase {
-    // Brug din hjælpefunktion her for at få den korrekte sti
+/**
+ * Singleton database instans for iOS.
+ * LazyThreadSafetyMode.PUBLICATION sikrer thread-safety i Kotlin/Native.
+ */
+private val databaseInstance: PadelBattleDatabase by lazy(LazyThreadSafetyMode.PUBLICATION) {
     val dbFilePath = documentDirectory() + "/padelbattle.db"
-
-    return Room.databaseBuilder<PadelBattleDatabase>(
+    
+    Room.databaseBuilder<PadelBattleDatabase>(
         name = dbFilePath
     )
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()
 }
+
+/**
+ * Returnerer singleton database-instansen.
+ * Thread-safe via lazy initialization med PUBLICATION mode.
+ */
+fun getPadelBattleDatabase(): PadelBattleDatabase = databaseInstance
 
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 private fun documentDirectory(): String {

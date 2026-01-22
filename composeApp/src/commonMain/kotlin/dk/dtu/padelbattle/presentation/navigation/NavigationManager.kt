@@ -5,6 +5,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import dk.dtu.padelbattle.domain.model.Tournament
 import dk.dtu.padelbattle.presentation.home.HomeViewModel
@@ -42,11 +45,16 @@ class NavigationManager(
 
     /**
      * Navigerer til en turnering baseret på ID.
+     * Loader den fulde turnering fra databasen (ikke kun summary).
      */
     fun navigateToTournament(tournamentId: String) {
-        homeViewModel.tournaments.value.find { it.id == tournamentId }?.let { tournament ->
-            tournamentViewModel.setTournament(tournament)
-            navController.navigate(TournamentView(tournamentName = tournament.name))
+        // Find summary for at få navnet til navigation
+        val summary = homeViewModel.tournaments.value.find { it.id == tournamentId }
+        
+        // Load den fulde turnering og naviger når den er klar
+        tournamentViewModel.loadTournamentById(tournamentId) { tournamentName ->
+            val name = tournamentName ?: summary?.name ?: "Turnering"
+            navController.navigate(TournamentView(tournamentName = name))
         }
     }
 
@@ -182,15 +190,31 @@ class NavigationManager(
     }
 
     /**
-     * Håndterer skærmskift-logik (reset tab, reset config).
+     * Håndterer skærmskift-logik (reset tab, reset config, reset tournament state).
      */
-    fun onScreenChanged(currentScreen: Screen) {
+    fun onScreenChanged(currentScreen: Screen, previousScreen: Screen? = null) {
         if (currentScreen !is TournamentView) {
             resetTab()
+            
+            // Reset tournament ViewModels når man navigerer væk fra TournamentView
+            // Dette forhindrer stale data og memory leaks fra cached state
+            if (previousScreen is TournamentView) {
+                resetTournamentState()
+            }
         }
         if (currentScreen !is TournamentConfig) {
             tournamentConfigViewModel.reset()
         }
+    }
+
+    /**
+     * Nulstiller tournament-relateret state i alle ViewModels.
+     * Kaldes når man navigerer væk fra en turnering.
+     */
+    private fun resetTournamentState() {
+        tournamentViewModel.reset()
+        contentViewModel.reset()
+        settingsViewModel.clearCallbacks()
     }
 }
 
@@ -203,6 +227,9 @@ fun NavigationManagerEffects(navigationManager: NavigationManager, currentScreen
     val tournamentViewModel: TournamentViewModel = org.koin.compose.koinInject()
     val currentTournament by tournamentViewModel.tournament.collectAsState()
     val revision by tournamentViewModel.revision.collectAsState()
+    
+    // Track previous screen for proper cleanup
+    var previousScreen by remember { mutableStateOf<Screen?>(null) }
 
     // Setup og cleanup af callbacks
     DisposableEffect(navigationManager) {
@@ -212,9 +239,10 @@ fun NavigationManagerEffects(navigationManager: NavigationManager, currentScreen
         }
     }
 
-    // Håndter skærmskift
+    // Håndter skærmskift med previous screen tracking
     LaunchedEffect(currentScreen) {
-        navigationManager.onScreenChanged(currentScreen)
+        navigationManager.onScreenChanged(currentScreen, previousScreen)
+        previousScreen = currentScreen
     }
 
     // Sync settings med skærm

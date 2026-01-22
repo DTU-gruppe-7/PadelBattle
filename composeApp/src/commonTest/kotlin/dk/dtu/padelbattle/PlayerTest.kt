@@ -71,58 +71,69 @@ class PlayerTest {
     }
 
     // =====================================================
-    // MUTABLE PROPERTY TESTS (simulates playing matches)
+    // IMMUTABLE PROPERTY TESTS (using copy() to update)
     // =====================================================
 
     @Test
     fun testPlayerStatisticsCanBeUpdated() {
         val player = Player(name = "Test")
         
-        // Simulate winning a match
-        player.wins++
-        player.gamesPlayed++
-        player.totalPoints += 21
+        // Simulate winning a match using copy()
+        val updatedPlayer = player.copy(
+            wins = player.wins + 1,
+            gamesPlayed = player.gamesPlayed + 1,
+            totalPoints = player.totalPoints + 21
+        )
         
-        assertEquals(1, player.wins)
-        assertEquals(1, player.gamesPlayed)
-        assertEquals(21, player.totalPoints)
+        assertEquals(1, updatedPlayer.wins)
+        assertEquals(1, updatedPlayer.gamesPlayed)
+        assertEquals(21, updatedPlayer.totalPoints)
+        
+        // Original player should be unchanged (immutability)
+        assertEquals(0, player.wins)
     }
 
     @Test
     fun testPlayerLossTracking() {
         val player = Player(name = "Test")
         
-        // Simulate losing a match
-        player.losses++
-        player.gamesPlayed++
-        player.totalPoints += 10
+        // Simulate losing a match using copy()
+        val updatedPlayer = player.copy(
+            losses = player.losses + 1,
+            gamesPlayed = player.gamesPlayed + 1,
+            totalPoints = player.totalPoints + 10
+        )
         
-        assertEquals(1, player.losses)
-        assertEquals(1, player.gamesPlayed)
-        assertEquals(10, player.totalPoints)
+        assertEquals(1, updatedPlayer.losses)
+        assertEquals(1, updatedPlayer.gamesPlayed)
+        assertEquals(10, updatedPlayer.totalPoints)
     }
 
     @Test
     fun testPlayerDrawTracking() {
         val player = Player(name = "Test")
         
-        // Simulate a draw
-        player.draws++
-        player.gamesPlayed++
-        player.totalPoints += 15
+        // Simulate a draw using copy()
+        val updatedPlayer = player.copy(
+            draws = player.draws + 1,
+            gamesPlayed = player.gamesPlayed + 1,
+            totalPoints = player.totalPoints + 15
+        )
         
-        assertEquals(1, player.draws)
-        assertEquals(1, player.gamesPlayed)
-        assertEquals(15, player.totalPoints)
+        assertEquals(1, updatedPlayer.draws)
+        assertEquals(1, updatedPlayer.gamesPlayed)
+        assertEquals(15, updatedPlayer.totalPoints)
     }
 
     @Test
     fun testPlayerNameCanBeChanged() {
         val player = Player(name = "Original Name")
         
-        player.name = "New Name"
+        val updatedPlayer = player.copy(name = "New Name")
         
-        assertEquals("New Name", player.name)
+        assertEquals("New Name", updatedPlayer.name)
+        // Original unchanged
+        assertEquals("Original Name", player.name)
     }
 
     // =====================================================
@@ -156,22 +167,28 @@ class PlayerTest {
 
     @Test
     fun testPlayerAfterMultipleMatches() {
-        val player = Player(name = "Tournament Player")
+        var player = Player(name = "Tournament Player")
         
         // Match 1: Win with 21 points
-        player.wins++
-        player.gamesPlayed++
-        player.totalPoints += 21
+        player = player.copy(
+            wins = player.wins + 1,
+            gamesPlayed = player.gamesPlayed + 1,
+            totalPoints = player.totalPoints + 21
+        )
         
         // Match 2: Loss with 15 points
-        player.losses++
-        player.gamesPlayed++
-        player.totalPoints += 15
+        player = player.copy(
+            losses = player.losses + 1,
+            gamesPlayed = player.gamesPlayed + 1,
+            totalPoints = player.totalPoints + 15
+        )
         
         // Match 3: Draw with 18 points
-        player.draws++
-        player.gamesPlayed++
-        player.totalPoints += 18
+        player = player.copy(
+            draws = player.draws + 1,
+            gamesPlayed = player.gamesPlayed + 1,
+            totalPoints = player.totalPoints + 18
+        )
         
         assertEquals(3, player.gamesPlayed)
         assertEquals(1, player.wins)

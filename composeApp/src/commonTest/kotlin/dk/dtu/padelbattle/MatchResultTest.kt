@@ -167,9 +167,17 @@ class MatchResultTest {
 
     @Test
     fun testMatchResultFromMatchScores() {
-        val match = createTestMatch()
-        match.scoreTeam1 = 21
-        match.scoreTeam2 = 18
+        val players = createTestPlayers()
+        val match = Match(
+            roundNumber = 1,
+            courtNumber = 1,
+            team1Player1 = players[0],
+            team1Player2 = players[1],
+            team2Player1 = players[2],
+            team2Player2 = players[3],
+            scoreTeam1 = 21,
+            scoreTeam2 = 18
+        )
         
         val result = MatchResult(match.scoreTeam1, match.scoreTeam2)
         
@@ -183,13 +191,16 @@ class MatchResultTest {
         val match = createTestMatch()
         val result = MatchResult(scoreTeam1 = 15, scoreTeam2 = 21)
         
-        match.scoreTeam1 = result.scoreTeam1
-        match.scoreTeam2 = result.scoreTeam2
-        match.isPlayed = true
+        // Use copy() for immutable Match
+        val updatedMatch = match.copy(
+            scoreTeam1 = result.scoreTeam1,
+            scoreTeam2 = result.scoreTeam2,
+            isPlayed = true
+        )
         
-        assertEquals(15, match.scoreTeam1)
-        assertEquals(21, match.scoreTeam2)
-        assertEquals(true, match.isPlayed)
+        assertEquals(15, updatedMatch.scoreTeam1)
+        assertEquals(21, updatedMatch.scoreTeam2)
+        assertEquals(true, updatedMatch.isPlayed)
     }
 
     // =====================================================

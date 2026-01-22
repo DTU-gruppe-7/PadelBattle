@@ -13,12 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dk.dtu.padelbattle.data.PadelBattleDatabase
-import dk.dtu.padelbattle.data.repository.TournamentRepository
-import dk.dtu.padelbattle.data.repository.TournamentRepositoryImpl
 import dk.dtu.padelbattle.ui.theme.PadelBattleTheme
 import dk.dtu.padelbattle.view.SettingsDialogs
 import dk.dtu.padelbattle.view.navigation.BottomNavigationBar
@@ -35,31 +31,23 @@ import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.koin.compose.koinInject
 
+/**
+ * Main App composable.
+ * ViewModels injiceres automatisk via Koin DI.
+ */
 @Composable
-@Preview
-fun App(
-    database: PadelBattleDatabase
-) {
-    // Opret repository (én gang per app-session)
-    val repository: TournamentRepository = remember {
-        TournamentRepositoryImpl(
-            tournamentDao = database.tournamentDao(),
-            playerDao = database.playerDao(),
-            matchDao = database.matchDao()
-        )
-    }
-
-    // ViewModels bruger nu repository i stedet for DAOs
-    val homeViewModel: HomeViewModel = viewModel { HomeViewModel(repository) }
-    val chooseTournamentViewModel: ChooseTournamentViewModel = viewModel { ChooseTournamentViewModel() }
-    val tournamentConfigViewModel: TournamentConfigViewModel = viewModel { TournamentConfigViewModel(repository) }
-    val tournamentViewModel: TournamentViewModel = viewModel { TournamentViewModel(repository) }
-    val standingsViewModel: StandingsViewModel = viewModel { StandingsViewModel() }
-    val matchEditViewModel: MatchEditViewModel = viewModel { MatchEditViewModel(repository) }
-    val matchListViewModel: MatchListViewModel = viewModel { MatchListViewModel() }
-    val settingsViewModel: SettingsViewModel = viewModel { SettingsViewModel(repository) }
+fun App() {
+    // ViewModels injiceres via Koin
+    val homeViewModel: HomeViewModel = koinInject()
+    val chooseTournamentViewModel: ChooseTournamentViewModel = koinInject()
+    val tournamentConfigViewModel: TournamentConfigViewModel = koinInject()
+    val tournamentViewModel: TournamentViewModel = koinInject()
+    val standingsViewModel: StandingsViewModel = koinInject()
+    val matchEditViewModel: MatchEditViewModel = koinInject()
+    val matchListViewModel: MatchListViewModel = koinInject()
+    val settingsViewModel: SettingsViewModel = koinInject()
 
     PadelBattleTheme {
         val navController = rememberNavController()

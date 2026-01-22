@@ -4,16 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.lifecycleScope
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import kotlinx.coroutines.launch
-import java.util.UUID // Bruges til at lave unikke String ID'er
-import dk.dtu.padelbattle.data.entity.TournamentEntity
-import dk.dtu.padelbattle.data.entity.PlayerEntity
-import dk.dtu.padelbattle.data.getPadelBattleDatabase
 import androidx.core.view.WindowCompat
+import dk.dtu.padelbattle.data.getPadelBattleDatabase
+import dk.dtu.padelbattle.di.appModule
+import dk.dtu.padelbattle.di.databaseModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,11 +22,24 @@ class MainActivity : ComponentActivity() {
         // Make system bars respect the dark theme
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Opret databasen her
+        // Opret databasen
         val database = getPadelBattleDatabase(applicationContext)
 
+        // Initialiser Koin DI (kun én gang)
+        try {
+            org.koin.mp.KoinPlatform.getKoin()
+            // Koin er allerede startet
+        } catch (e: IllegalStateException) {
+            // Koin er ikke startet endnu
+            startKoin {
+                androidLogger()
+                androidContext(this@MainActivity)
+                modules(databaseModule(database), appModule)
+            }
+        }
+
         setContent {
-            App(database = database) // Send den med ind
+            App()
         }
     }
 }

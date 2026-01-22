@@ -25,41 +25,32 @@ import dk.dtu.padelbattle.viewmodel.SettingsViewModel
 import dk.dtu.padelbattle.viewmodel.StandingsViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentConfigViewModel
 import dk.dtu.padelbattle.viewmodel.TournamentViewModel
+import org.koin.compose.koinInject
 
 // Animation specifikationer
 private const val ANIMATION_DURATION_MS = 350
 
+/**
+ * Navigation graph for the app.
+ * ViewModels injiceres via Koin for at reducere parameter-bloat.
+ */
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
-    homeViewModel: HomeViewModel,
-    chooseTournamentViewModel: ChooseTournamentViewModel,
-    tournamentConfigViewModel: TournamentConfigViewModel,
-    tournamentViewModel: TournamentViewModel,
-    standingsViewModel: StandingsViewModel,
-    matchEditViewModel: MatchEditViewModel,
-    matchListViewModel: MatchListViewModel,
-    settingsViewModel: SettingsViewModel,
+    navigationManager: NavigationManager,
     selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Fælles navigation callbacks
-    val navigateToTournament: (String) -> Unit = { tournamentId ->
-        homeViewModel.tournaments.value.find { it.id == tournamentId }?.let { tournament ->
-            tournamentViewModel.setTournament(tournament)
-            navController.navigate(TournamentView(tournamentName = tournament.name))
-        }
-    }
-
-    val navigateToDuplicate: (String, String) -> Unit = { tournamentType, tournamentId ->
-        navController.navigate(
-            TournamentConfig(
-                tournamentType = tournamentType,
-                duplicateFromId = tournamentId
-            )
-        )
-    }
+    // ViewModels injiceres via Koin
+    val homeViewModel: HomeViewModel = koinInject()
+    val chooseTournamentViewModel: ChooseTournamentViewModel = koinInject()
+    val tournamentConfigViewModel: TournamentConfigViewModel = koinInject()
+    val tournamentViewModel: TournamentViewModel = koinInject()
+    val standingsViewModel: StandingsViewModel = koinInject()
+    val matchEditViewModel: MatchEditViewModel = koinInject()
+    val matchListViewModel: MatchListViewModel = koinInject()
+    val settingsViewModel: SettingsViewModel = koinInject()
 
     NavHost(
         navController = navController,
@@ -94,18 +85,18 @@ fun NavigationGraph(
         composable<Home> {
             HomeScreen(
                 viewModel = homeViewModel,
-                onGoToTournamentScreen = { navController.navigate(ChooseTournament) },
-                onTournamentClicked = navigateToTournament,
-                onDuplicateTournament = navigateToDuplicate,
-                onGoToSearchScreen = { navController.navigate(SearchTournament) }
+                onGoToTournamentScreen = { navigationManager.navigateToChooseTournament() },
+                onTournamentClicked = { navigationManager.navigateToTournament(it) },
+                onDuplicateTournament = { type, id -> navigationManager.navigateToDuplicate(type, id) },
+                onGoToSearchScreen = { navigationManager.navigateToSearch() }
             )
         }
 
         composable<SearchTournament> {
             SearchScreen(
                 viewModel = homeViewModel,
-                onTournamentClicked = navigateToTournament,
-                onDuplicateTournament = navigateToDuplicate
+                onTournamentClicked = { navigationManager.navigateToTournament(it) },
+                onDuplicateTournament = { type, id -> navigationManager.navigateToDuplicate(type, id) }
             )
         }
 
@@ -114,7 +105,7 @@ fun NavigationGraph(
                 viewModel = chooseTournamentViewModel,
                 onNavigateToPlayers = {
                     val typeName = chooseTournamentViewModel.selectedTournamentType.value?.name ?: "AMERICANO"
-                    navController.navigate(TournamentConfig(tournamentType = typeName, duplicateFromId = null))
+                    navigationManager.navigateToTournamentConfig(typeName)
                 }
             )
         }
@@ -131,20 +122,10 @@ fun NavigationGraph(
                 viewModel = tournamentConfigViewModel,
                 duplicateFromId = config.duplicateFromId,
                 onTournamentCreated = { tournament ->
-                    // Gem turneringen i viewmodel
-                    tournamentViewModel.setTournament(tournament)
-
-                    // Naviger til turneringsoversigt
-                    navController.navigate(TournamentView(tournamentName = tournament.name)) {
-                        popUpTo(Home) { inclusive = false }
-                    }
-
-                    // Reset config viewmodel til næste turnering
-                    tournamentConfigViewModel.reset()
+                    navigationManager.onTournamentCreated(tournament)
                 },
                 onGoBack = {
-                    tournamentConfigViewModel.reset()
-                    navController.popBackStack()
+                    navigationManager.navigateBackFromConfig()
                 }
             )
         }
@@ -162,4 +143,3 @@ fun NavigationGraph(
         }
     }
 }
-

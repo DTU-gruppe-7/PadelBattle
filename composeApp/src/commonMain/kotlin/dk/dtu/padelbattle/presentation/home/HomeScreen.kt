@@ -38,7 +38,7 @@ fun HomeScreen(
     onGoToSearchScreen: () -> Unit = {}
 ) {
     val tournaments by viewModel.tournaments.collectAsState()
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    val selectedTabIndex by viewModel.selectedTabIndex.collectAsState()
     val showDeleteConfirmation by viewModel.deleteConfirmation.showDeleteConfirmation.collectAsState()
 
     val activeTournaments = tournaments.filter { !it.isCompleted }
@@ -127,7 +127,7 @@ fun HomeScreen(
                         )
 
                         Surface(
-                            onClick = { selectedTabIndex = index },
+                            onClick = { viewModel.selectTab(index) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(24.dp),
                             color = bgColor

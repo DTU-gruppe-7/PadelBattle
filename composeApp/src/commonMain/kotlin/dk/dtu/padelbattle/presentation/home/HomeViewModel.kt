@@ -16,6 +16,14 @@ class HomeViewModel(
     private val repository: TournamentRepository
 ) : ViewModel() {
 
+    // Valgt fane på home screen (0 = igangværende, 1 = afsluttede)
+    private val _selectedTabIndex = MutableStateFlow(0)
+    val selectedTabIndex: StateFlow<Int> = _selectedTabIndex.asStateFlow()
+
+    fun selectTab(index: Int) {
+        _selectedTabIndex.value = index
+    }
+
     // Søgetilstand
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()

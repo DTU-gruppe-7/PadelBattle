@@ -76,4 +76,20 @@ class MatchListViewModel : ViewModel() {
     fun notifyMatchUpdated() {
         _revision.value++
     }
+
+    /**
+     * Navigerer til den første uspillede runde.
+     * Bruges efter at turneringen er blevet udvidet med nye runder.
+     */
+    fun navigateToFirstUnplayedRound() {
+        val firstUnplayedMatch = _matches.value
+            .sortedBy { it.roundNumber }
+            .firstOrNull { !it.isPlayed }
+
+        val targetRound = firstUnplayedMatch?.roundNumber
+            ?: _matches.value.maxOfOrNull { it.roundNumber }
+            ?: 1
+
+        _currentRound.value = targetRound
+    }
 }

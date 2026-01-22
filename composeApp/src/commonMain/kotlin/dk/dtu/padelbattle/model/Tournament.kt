@@ -6,35 +6,32 @@ import dk.dtu.padelbattle.model.generator.TournamentGenerator
 import dk.dtu.padelbattle.model.utils.generateId
 
 /**
- * Repræsenterer en padel-turnering.
+ * Repræsenterer en padel-turnering (immutable).
  * 
- * Turneringen indeholder spillere og kampe, og delegerer
- * generering af kampe til den passende [TournamentGenerator].
+ * Turneringen indeholder spillere og kampe. Brug [copy] til at oprette
+ * opdaterede versioner af turneringen.
  */
-class Tournament(
+data class Tournament(
     val id: String = generateId(),
-    var name: String,
+    val name: String,
     val type: TournamentType,
     val dateCreated: Long,
-    var numberOfCourts: Int = 1,
-    var pointsPerMatch: Int = 16,
-    val players: MutableList<Player> = mutableListOf(),
-    val matches: MutableList<Match> = mutableListOf(),
-    var isCompleted: Boolean = false
+    val numberOfCourts: Int = 1,
+    val pointsPerMatch: Int = 16,
+    val players: List<Player> = emptyList(),
+    val matches: List<Match> = emptyList(),
+    val isCompleted: Boolean = false
 ) {
 
     companion object {
         const val MAX_COURTS = 8
         const val MAX_PLAYERS = 32
         const val MIN_PLAYERS = 4
-    }
 
-    /**
-     * Generator til at oprette kampe baseret på turneringstypen.
-     * Lazy-initialiseret for at undgå unødvendig instansiering.
-     */
-    private val generator: TournamentGenerator by lazy {
-        when (type) {
+        /**
+         * Henter den korrekte generator baseret på turneringstype.
+         */
+        fun getGenerator(type: TournamentType): TournamentGenerator = when (type) {
             TournamentType.AMERICANO -> AmericanoGenerator()
             TournamentType.MEXICANO -> MexicanoGenerator()
         }
@@ -61,48 +58,50 @@ class Tournament(
     fun hasPlayedMatches(): Boolean = matches.any { it.isPlayed }
 
     /**
-     * Starter turneringen ved at generere initielle kampe.
-     * Rydder eksisterende kampe og genererer nye baseret på turneringstypen.
+     * Genererer initielle kampe for turneringen.
+     * Returnerer en ny Tournament med genererede kampe.
      * 
-     * @return true hvis turneringen blev startet succesfuldt
+     * @return Ny Tournament med genererede kampe
      * @throws IllegalStateException hvis antal spillere er ugyldigt
      */
-    fun startTournament(): Boolean {
+    fun generateInitialMatches(): Tournament {
         validatePlayerCount()
 
-        matches.clear()
-
+        val generator = getGenerator(type)
         val generatedMatches = generator.generateInitialMatches(
-            players = players.toList(),
+            players = players,
             numberOfCourts = getEffectiveCourts()
         )
 
-        matches.addAll(generatedMatches)
-        return true
+        return copy(matches = generatedMatches)
     }
 
     /**
      * Udvider turneringen med flere kampe.
-     * Bruges til at fortsætte en afsluttet turnering.
+     * Returnerer en ny Tournament med eksisterende + nye kampe.
      * 
-     * @return true hvis turneringen blev udvidet succesfuldt
+     * @return Ny Tournament med udvidede kampe, eller null hvis ingen nye kampe kunne genereres
      * @throws IllegalStateException hvis antal spillere er ugyldigt
      */
-    fun extendTournament(): Boolean {
+    fun generateExtensionMatches(): Tournament? {
         validatePlayerCount()
 
         if (matches.isEmpty()) {
-            return startTournament()
+            return generateInitialMatches()
         }
 
+        val generator = getGenerator(type)
         val newMatches = generator.generateExtensionMatches(
-            players = players.toList(),
-            existingMatches = matches.toList(),
+            players = players,
+            existingMatches = matches,
             numberOfCourts = getEffectiveCourts()
         )
 
-        matches.addAll(newMatches)
-        return newMatches.isNotEmpty()
+        return if (newMatches.isNotEmpty()) {
+            copy(matches = matches + newMatches)
+        } else {
+            null
+        }
     }
 
     // --- PRIVATE HELPERS ---

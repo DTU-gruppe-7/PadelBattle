@@ -62,8 +62,8 @@ fun TournamentViewScreen(
                                 standingsViewModel.setPlayers(currentTournament.players.map { it.copy() })
                             },
                             onTournamentCompleted = {
-                                // Marker turneringen som completed i memory
-                                currentTournament.isCompleted = true
+                                // Marker turneringen som completed (via ViewModel)
+                                viewModel.updateTournament(currentTournament.copy(isCompleted = true))
                                 viewModel.notifyTournamentUpdated()
                                 // Skift til standings tab (genbruger logik fra bottom bar)
                                 onTabSelected(1)
@@ -88,15 +88,15 @@ fun TournamentViewScreen(
                         },
                         onContinueTournament = {
                             viewModel.continueTournament {
-                                // Turneringen er allerede opdateret i memory med nye kampe
-                                // Brug loadTournament for at navigere til den nye runde
-                                tournament?.let { t ->
-                                    matchListViewModel.loadTournament(t.matches)
+                                // Genindlæs turneringen fra databasen for at få de nye kampe
+                                viewModel.reloadFromDatabase { reloadedTournament ->
+                                    reloadedTournament?.let {
+                                        // Opdater matches og naviger til første nye runde
+                                        matchListViewModel.loadTournament(it.matches)
+                                    }
+                                    // Naviger til kampe-tab
+                                    onTabSelected(0)
                                 }
-                                // Opdater revision for at trigger UI opdatering
-                                viewModel.notifyTournamentUpdated()
-                                // Naviger til kampe-tab
-                                onTabSelected(0)
                             }
                         }
                     )

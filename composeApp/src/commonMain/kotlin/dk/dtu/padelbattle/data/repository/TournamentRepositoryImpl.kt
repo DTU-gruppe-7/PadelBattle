@@ -153,12 +153,12 @@ class TournamentRepositoryImpl(
         playerEntities: List<PlayerEntity>,
         matchEntities: List<MatchEntity>
     ): Tournament {
-        val players = playerEntities.map { it.toPlayer() }.toMutableList()
+        val players = playerEntities.map { it.toPlayer() }
         val playerMap = players.associateBy { it.id }
 
         val matches = matchEntities.map { matchEntity ->
             matchEntity.toMatch(playerMap)
-        }.toMutableList()
+        }
 
         return Tournament(
             id = this.id,

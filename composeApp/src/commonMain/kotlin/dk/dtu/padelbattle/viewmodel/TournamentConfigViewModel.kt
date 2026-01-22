@@ -102,10 +102,10 @@ class TournamentConfigViewModel(
         viewModelScope.launch {
             try {
                 // Opret Player-objekter fra navnene
-                val players = _playerNames.value.map { Player(name = it) }.toMutableList()
+                val players = _playerNames.value.map { Player(name = it) }
 
                 // Opret turnering med spillere
-                val tournament = Tournament(
+                val tournamentConfig = Tournament(
                     name = _tournamentName.value,
                     type = tournamentType,
                     dateCreated = Clock.System.now().toEpochMilliseconds(),
@@ -114,8 +114,8 @@ class TournamentConfigViewModel(
                     players = players
                 )
 
-                // Generer kampe
-                tournament.startTournament()
+                // Generer kampe (returnerer ny immutable Tournament)
+                val tournament = tournamentConfig.generateInitialMatches()
 
                 // Gem til database via repository
                 repository.saveTournament(tournament)

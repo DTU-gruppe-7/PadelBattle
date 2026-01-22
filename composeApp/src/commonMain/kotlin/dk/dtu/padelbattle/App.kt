@@ -114,8 +114,11 @@ fun App(
             tournament = currentTournament,
             onUpdate = { tournamentViewModel.notifyTournamentUpdated() },
             onCourtsUpdated = {
-                currentTournament?.let { tournament ->
-                    matchListViewModel.loadTournament(tournament.matches)
+                // Genindlæs fra databasen for at få de nye kampe
+                tournamentViewModel.reloadFromDatabase { reloadedTournament ->
+                    reloadedTournament?.let {
+                        matchListViewModel.loadTournament(it.matches)
+                    }
                 }
             }
         )

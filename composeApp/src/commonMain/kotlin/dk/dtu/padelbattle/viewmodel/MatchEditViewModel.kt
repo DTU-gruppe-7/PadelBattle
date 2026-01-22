@@ -163,19 +163,21 @@ class MatchEditViewModel(
                         repository.clearExtensionTracking(tournamentId)
                     } else {
                         println("Turneringen fortsætter - genererer ny runde...")
-                        val addedNewRound = tournament.extendTournament()
+                        val extendedTournament = tournament.generateExtensionMatches()
 
-                        if (addedNewRound) {
-                            val newMatches = tournament.matches.filter { !it.isPlayed }
+                        if (extendedTournament != null) {
+                            // Find de nye kampe (forskellen mellem gammel og ny)
+                            val existingMatchIds = tournament.matches.map { it.id }.toSet()
+                            val newMatches = extendedTournament.matches.filter { it.id !in existingMatchIds }
 
                             if (newMatches.isNotEmpty()) {
                                 println("Genererer runde ${newMatches.first().roundNumber} med ${newMatches.size} kampe")
                                 repository.insertMatches(newMatches, tournamentId)
                             } else {
-                                println("ADVARSEL: extendTournament returnerede true men ingen nye kampe blev genereret")
+                                println("ADVARSEL: generateExtensionMatches returnerede tournament men ingen nye kampe")
                             }
                         } else {
-                            println("ADVARSEL: extendTournament returnerede false")
+                            println("ADVARSEL: generateExtensionMatches returnerede null")
                         }
                     }
                 } else {

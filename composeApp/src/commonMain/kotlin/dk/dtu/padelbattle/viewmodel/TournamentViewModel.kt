@@ -34,8 +34,9 @@ class TournamentViewModel(
     /**
      * Genindlæser turneringen fra databasen.
      * Bruges når nye kampe er blevet genereret og gemt i databasen.
+     * @param onComplete Optional callback der kaldes når genindlæsning er færdig
      */
-    fun reloadFromDatabase() {
+    fun reloadFromDatabase(onComplete: ((Tournament?) -> Unit)? = null) {
         val currentId = _tournament.value?.id ?: return
 
         viewModelScope.launch {
@@ -44,8 +45,10 @@ class TournamentViewModel(
                 val reloadedTournament = repository.getTournamentById(currentId)
                 _tournament.value = reloadedTournament
                 _revision.value++
+                onComplete?.invoke(reloadedTournament)
             } catch (e: Exception) {
                 _error.value = "Kunne ikke genindlæse turnering: ${e.message}"
+                onComplete?.invoke(null)
             } finally {
                 _isLoading.value = false
             }
@@ -105,15 +108,16 @@ class TournamentViewModel(
 
         viewModelScope.launch {
             try {
-                // 1. Find og erstat spilleren i players listen med ny kopi
-                val playerIndex = currentTournament.players.indexOfFirst { it.id == player.id }
-                if (playerIndex == -1) return@launch
-                
-                val updatedPlayer = currentTournament.players[playerIndex].copy(name = newName)
-                currentTournament.players[playerIndex] = updatedPlayer
+                // 1. Opret opdateret spiller
+                val updatedPlayer = player.copy(name = newName)
 
-                // 2. Opdater alle matches der refererer til denne spiller
-                currentTournament.matches.forEachIndexed { index, match ->
+                // 2. Opret ny players liste med opdateret spiller
+                val updatedPlayers = currentTournament.players.map { p ->
+                    if (p.id == player.id) updatedPlayer else p
+                }
+
+                // 3. Opdater alle matches der refererer til denne spiller
+                val updatedMatches = currentTournament.matches.map { match ->
                     var updatedMatch = match
                     if (match.team1Player1.id == player.id) {
                         updatedMatch = updatedMatch.copy(team1Player1 = updatedPlayer)
@@ -127,15 +131,22 @@ class TournamentViewModel(
                     if (match.team2Player2.id == player.id) {
                         updatedMatch = updatedMatch.copy(team2Player2 = updatedPlayer)
                     }
-                    if (updatedMatch !== match) {
-                        currentTournament.matches[index] = updatedMatch
-                    }
+                    updatedMatch
                 }
 
-                // 3. Gem til database
+                // 4. Opret ny tournament med opdaterede lister
+                val updatedTournament = currentTournament.copy(
+                    players = updatedPlayers,
+                    matches = updatedMatches
+                )
+
+                // 5. Gem til database
                 repository.updatePlayer(updatedPlayer, currentTournament.id)
 
-                // 4. Trigger UI opdatering
+                // 6. Opdater lokal state
+                _tournament.value = updatedTournament
+
+                // 7. Trigger UI opdatering
                 notifyTournamentUpdated()
             } catch (e: Exception) {
                 _error.value = "Kunne ikke opdatere spillernavn: ${e.message}"
@@ -152,16 +163,17 @@ class TournamentViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 1. Generer ny runde
-                val success = currentTournament.extendTournament()
+                // 1. Generer ny runde (returnerer ny immutable Tournament)
+                val extendedTournament = currentTournament.generateExtensionMatches()
 
-                if (!success) {
+                if (extendedTournament == null) {
                     _error.value = "Kunne ikke generere ny runde"
                     return@launch
                 }
 
-                // 2. Find de nye kampe (dem der ikke er spillet endnu)
-                val newMatches = currentTournament.matches.filter { !it.isPlayed }
+                // 2. Find de nye kampe (forskellen mellem gammel og ny)
+                val existingMatchIds = currentTournament.matches.map { it.id }.toSet()
+                val newMatches = extendedTournament.matches.filter { it.id !in existingMatchIds }
 
                 if (newMatches.isEmpty()) {
                     _error.value = "Ingen nye kampe blev genereret"
@@ -177,13 +189,16 @@ class TournamentViewModel(
                 }
 
                 // 5. Marker turneringen som ikke-afsluttet
-                currentTournament.isCompleted = false
+                val finalTournament = extendedTournament.copy(isCompleted = false)
                 repository.updateTournamentCompleted(currentTournament.id, false)
 
-                // 6. Opdater UI
+                // 6. Opdater lokal state
+                _tournament.value = finalTournament
+
+                // 7. Trigger UI opdatering
                 notifyTournamentUpdated()
 
-                // 7. Kald success callback
+                // 8. Kald success callback
                 onSuccess()
 
             } catch (e: Exception) {

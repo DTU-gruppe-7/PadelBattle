@@ -143,7 +143,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 repository.updateTournamentName(tournamentId, newName)
-                currentTournament?.name = newName
+                currentTournament = currentTournament?.copy(name = newName)
                 onTournamentUpdated?.invoke()
                 dismissDialog()
             } catch (e: Exception) {
@@ -198,7 +198,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 repository.updatePointsPerMatch(tournament.id, newPoints)
-                tournament.pointsPerMatch = newPoints
+                currentTournament = tournament.copy(pointsPerMatch = newPoints)
                 onTournamentUpdated?.invoke()
             } catch (e: Exception) {
                 _error.value = "Kunne ikke gemme ændring: ${e.message}"
@@ -227,9 +227,6 @@ class SettingsViewModel(
         }
 
         viewModelScope.launch {
-            val oldNumberOfCourts = tournament.numberOfCourts
-            val oldMatches = tournament.matches.toList()
-
             try {
                 _isUpdatingCourts.value = true
 
@@ -242,19 +239,14 @@ class SettingsViewModel(
                     return@launch
                 }
 
-                // Opdater antal baner i modellen
-                tournament.numberOfCourts = newCourts
-                tournament.matches.clear()
-
-                // Generer nye kampe
-                withContext(Dispatchers.Default) {
-                    val success = tournament.startTournament()
-                    if (!success) {
-                        throw IllegalStateException("Kunne ikke generere kampe for turneringen")
-                    }
+                // Opret ny turnering med opdateret antal baner og generer kampe
+                val updatedTournament = withContext(Dispatchers.Default) {
+                    tournament
+                        .copy(numberOfCourts = newCourts, matches = emptyList())
+                        .generateInitialMatches()
                 }
 
-                if (tournament.matches.isEmpty()) {
+                if (updatedTournament.matches.isEmpty()) {
                     throw IllegalStateException("Ingen kampe blev genereret")
                 }
 
@@ -267,7 +259,10 @@ class SettingsViewModel(
                 // Udfør database-operationer
                 repository.deleteMatchesByTournament(tournamentId)
                 repository.updateNumberOfCourts(tournamentId, newCourts)
-                repository.insertMatches(tournament.matches.toList(), tournamentId)
+                repository.insertMatches(updatedTournament.matches, tournamentId)
+
+                // Opdater lokal reference
+                currentTournament = updatedTournament
 
                 onTournamentUpdated?.invoke()
                 onCourtsChanged?.invoke()
@@ -276,22 +271,7 @@ class SettingsViewModel(
                 dismissDialog()
 
             } catch (e: Exception) {
-                // Rollback
-                tournament.numberOfCourts = oldNumberOfCourts
-                tournament.matches.clear()
-                tournament.matches.addAll(oldMatches)
-
-                try {
-                    repository.deleteMatchesByTournament(tournamentId)
-                    repository.insertMatches(oldMatches, tournamentId)
-                    repository.updateNumberOfCourts(tournamentId, oldNumberOfCourts)
-                } catch (rollbackException: Exception) {
-                    _error.value = "Kritisk fejl: Kunne ikke rulle tilbage ændringer. ${rollbackException.message}"
-                    _isUpdatingCourts.value = false
-                    dismissDialog()
-                    return@launch
-                }
-
+                // Ved fejl forbliver currentTournament uændret (immutable)
                 _error.value = "Kunne ikke ændre antal baner: ${e.message}"
                 _isUpdatingCourts.value = false
                 dismissDialog()

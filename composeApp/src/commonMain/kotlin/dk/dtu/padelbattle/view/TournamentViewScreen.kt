@@ -23,8 +23,7 @@ fun TournamentViewScreen(
     matchListViewModel: MatchListViewModel,
     settingsViewModel: SettingsViewModel,
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-    onGoBack: () -> Unit
+    onTabSelected: (Int) -> Unit
 ) {
     val tournament by viewModel.tournament.collectAsState()
     val revision by viewModel.revision.collectAsState()

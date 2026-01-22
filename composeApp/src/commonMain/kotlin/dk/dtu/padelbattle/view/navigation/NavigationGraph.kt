@@ -157,10 +157,7 @@ fun NavigationGraph(
                 matchListViewModel = matchListViewModel,
                 settingsViewModel = settingsViewModel,
                 selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                onGoBack = {
-                    navController.popBackStack()
-                }
+                onTabSelected = onTabSelected
             )
         }
     }

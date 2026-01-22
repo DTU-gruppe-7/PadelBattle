@@ -14,8 +14,4 @@ class ChooseTournamentViewModel : ViewModel() {
     fun selectTournamentType(type: TournamentType) {
         _selectedTournamentType.value = type
     }
-
-    fun clearSelection() {
-        _selectedTournamentType.value = null
-    }
 }

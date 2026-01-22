@@ -69,24 +69,6 @@ class Tournament(
         }
     }
 
-    /**
-     * Tjekker om Mexicano-kriterierne for afslutning er mødt.
-     * Reglen: Alle skal have spillet mindst [minMatches] kampe OG alle skal have lige mange kampe.
-     */
-    fun isMexicanoFinished(minMatches: Int = 3): Boolean {
-        // Hvis der er kampe der mangler at blive spillet, er vi ikke færdige
-        if (matches.any { !it.isPlayed }) return false
-
-        rebuildTrackingFromMatches() // Sikr at vores tællere er opdaterede
-
-        // Tjek det laveste og højeste antal kampe
-        val minPlayed = matchCount.values.minOrNull() ?: 0
-        val maxPlayed = matchCount.values.maxOrNull() ?: 0
-        
-        // Alle skal have spillet mindst minMatches OG alle skal have lige mange kampe
-        return minPlayed >= minMatches && minPlayed == maxPlayed
-    }
-
     fun extendTournament(): Boolean {
         if (!validatePlayerCount()) return false
 
@@ -513,69 +495,6 @@ class Tournament(
             for (p2 in team2) {
                 val key = pairKey(p1.id, p2.id)
                 opponentCount[key] = (opponentCount[key] ?: 0) + 1
-            }
-        }
-    }
-    
-    /**
-     * Balancerer kampantal så alle spillere har præcis samme antal kampe.
-     * Minimerer antallet af ekstra kampe der skal tilføjes.
-     */
-    private fun balanceMatchCountsOptimal(startRoundNumber: Int, opponentCount: MutableMap<Set<String>, Int>) {
-        var roundNumber = startRoundNumber
-        val maxIterations = 50
-        var iterations = 0
-        
-        while (!allPlayersHaveEqualMatches() && iterations < maxIterations) {
-            iterations++
-            
-            val maxMatches = matchCount.values.maxOrNull() ?: 0
-            
-            // Find spillere der har færre kampe end max
-            val playersNeedingMatches = players
-                .filter { (matchCount[it.id] ?: 0) < maxMatches }
-                .sortedBy { matchCount[it.id] ?: 0 }
-            
-            if (playersNeedingMatches.isEmpty()) break
-            
-            if (playersNeedingMatches.size < 4) {
-                // Ikke nok spillere der mangler kampe - tilføj filler spillere
-                // Vælg filler spillere der har færrest ekstra kampe
-                val fillerPlayers = players
-                    .filter { (matchCount[it.id] ?: 0) == maxMatches }
-                    .shuffled()
-                    .take(4 - playersNeedingMatches.size)
-                
-                val allPlayers = (playersNeedingMatches + fillerPlayers).take(4)
-                if (allPlayers.size == 4) {
-                    roundNumber++
-                    val match = createBalancingMatch(roundNumber, 1, allPlayers, opponentCount)
-                    matches.add(match)
-                    updateTracking(match, roundNumber)
-                    updateOpponentCount(match, opponentCount)
-                } else {
-                    // Ikke muligt at lave en kamp - stop
-                    break
-                }
-                // Fortsæt løkken for at tjekke om alle nu har lige mange kampe
-                continue
-            }
-            
-            // Lav kampe med de spillere der har færrest kampe
-            roundNumber++
-            val courts = getEffectiveCourts()
-            val matchesToCreate = (playersNeedingMatches.size / 4).coerceIn(1, courts)
-            
-            val usedPlayers = mutableSetOf<String>()
-            for (m in 0 until matchesToCreate) {
-                val available = playersNeedingMatches.filter { it.id !in usedPlayers }.take(4)
-                if (available.size < 4) break
-                
-                val match = createBalancingMatch(roundNumber, m + 1, available, opponentCount)
-                matches.add(match)
-                updateTracking(match, roundNumber)
-                updateOpponentCount(match, opponentCount)
-                available.forEach { usedPlayers.add(it.id) }
             }
         }
     }

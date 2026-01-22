@@ -11,12 +11,9 @@ fun getCurrentScreen(backStackEntry: NavBackStackEntry?): Screen {
 
     return when (route) {
         Home::class.qualifiedName -> Home
-        ChoosePlayer::class.qualifiedName -> ChoosePlayer
         ChooseTournament::class.qualifiedName -> ChooseTournament
         else -> {
             when {
-                route.startsWith(Gameplay::class.qualifiedName ?: "") ->
-                    backStackEntry.toRoute<Gameplay>()
                 route.startsWith(TournamentConfig::class.qualifiedName ?: "") ->
                     backStackEntry.toRoute<TournamentConfig>()
                 route.startsWith(TournamentView::class.qualifiedName ?: "") ->

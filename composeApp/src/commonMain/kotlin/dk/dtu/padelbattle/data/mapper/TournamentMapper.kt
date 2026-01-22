@@ -166,21 +166,6 @@ fun TournamentDao.getAllTournamentsWithDetails(
 }
 
 /**
- * Henter en specifik turnering med alle spillere og kampe.
- */
-suspend fun TournamentDao.getTournamentByIdWithDetails(
-    id: String,
-    playerDao: PlayerDao,
-    matchDao: MatchDao
-): Tournament? {
-    return try {
-        loadFullTournamentFromDao(id, this, playerDao, matchDao)
-    } catch (e: IllegalStateException) {
-        null
-    }
-}
-
-/**
  * Loader en komplet Tournament fra databasen med alle spillere og kampe.
  */
 suspend fun loadFullTournamentFromDao(
@@ -196,39 +181,6 @@ suspend fun loadFullTournamentFromDao(
     val matchEntities = matchDao.getMatchesByTournamentOnce(tournamentId)
 
     return tournamentEntity.toTournament(playerEntities, matchEntities)
-}
-
-/**
- * Gemmer en Tournament i databasen ved at konvertere til entities.
- */
-suspend fun saveTournamentToDao(
-    tournament: Tournament,
-    tournamentDao: TournamentDao,
-    playerDao: PlayerDao,
-    matchDao: MatchDao
-) {
-    // Gem turnering
-    tournamentDao.insertTournament(tournament.toEntity())
-
-    // Gem spillere
-    val playerEntities = tournament.players.map { it.toEntity(tournament.id) }
-    playerDao.insertPlayers(playerEntities)
-
-    // Gem kampe
-    val matchEntities = tournament.matches.map { it.toEntity(tournament.id) }
-    matchDao.insertMatches(matchEntities)
-}
-
-/**
- * Opdaterer en eksisterende turnering.
- */
-suspend fun updateTournamentInDao(
-    tournament: Tournament,
-    tournamentDao: TournamentDao,
-    playerDao: PlayerDao,
-    matchDao: MatchDao
-) {
-    saveTournamentToDao(tournament, tournamentDao, playerDao, matchDao) // REPLACE strategi i Room håndterer opdatering
 }
 
 /**

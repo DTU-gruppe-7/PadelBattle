@@ -61,15 +61,4 @@ class HomeViewModel(
             }
         }
     }
-
-    /**
-     * Returnerer navigation data til duplikering af en turnering.
-     * Ekstraherer tournamentType og tournamentId som Strings til navigation.
-     *
-     * @param tournament Turneringen der skal duplikeres
-     * @return Pair af (tournamentType, tournamentId) der kan bruges til navigation
-     */
-    fun getDuplicationNavigationData(tournament: Tournament): Pair<String, String> {
-        return Pair(tournament.type.name, tournament.id)
-    }
 }

@@ -2,11 +2,12 @@ package dk.dtu.padelbattle.model
 
 import dk.dtu.padelbattle.model.utils.generateId
 
-data class Player(val id: String = generateId(), // Genererer automatisk unikt ID
-                  var name: String,
-                  var totalPoints: Int = 0,
-                  var gamesPlayed: Int = 0,
-                  var wins: Int = 0,
-                  var losses: Int = 0,
-                  var draws: Int = 0
+data class Player(
+    val id: String = generateId(),
+    val name: String,
+    val totalPoints: Int = 0,
+    val gamesPlayed: Int = 0,
+    val wins: Int = 0,
+    val losses: Int = 0,
+    val draws: Int = 0
 )

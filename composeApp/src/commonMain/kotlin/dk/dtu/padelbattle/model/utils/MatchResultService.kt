@@ -4,6 +4,7 @@ import dk.dtu.padelbattle.data.repository.TournamentRepository
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchOutcome
 import dk.dtu.padelbattle.model.MatchResult
+import dk.dtu.padelbattle.model.Player
 
 /**
  * Service responsible for managing match results and updating player statistics.
@@ -25,39 +26,53 @@ class MatchResultService(
      */
     suspend fun recordMatchResult(match: Match, newResult: MatchResult, tournamentId: String) {
         try {
-            // Valider tournamentId
             require(tournamentId.isNotBlank()) { "tournamentId cannot be blank" }
 
             println("MatchResultService: Recording result for match ${match.id} in tournament $tournamentId")
 
+            // Get current players from the match
+            var player1Team1 = match.team1Player1
+            var player1Team2 = match.team1Player2
+            var player2Team1 = match.team2Player1
+            var player2Team2 = match.team2Player2
+
             // If the match was already played, revert old statistics first
             if (match.isPlayed) {
                 val oldResult = MatchResult(match.scoreTeam1, match.scoreTeam2)
-                revertPlayerStatistics(match, oldResult)
+                val revertedPlayers = revertPlayerStatistics(
+                    listOf(player1Team1, player1Team2),
+                    listOf(player2Team1, player2Team2),
+                    oldResult
+                )
+                player1Team1 = revertedPlayers[0]
+                player1Team2 = revertedPlayers[1]
+                player2Team1 = revertedPlayers[2]
+                player2Team2 = revertedPlayers[3]
             }
 
-            // Update match scores
-            match.scoreTeam1 = newResult.scoreTeam1
-            match.scoreTeam2 = newResult.scoreTeam2
-            match.isPlayed = true
-
             // Apply new statistics
-            applyPlayerStatistics(match, newResult)
-
-            println("MatchResultService: Updating match in database...")
-            // Update match in database
-            repository.updateMatch(match, tournamentId)
-
-            println("MatchResultService: Updating players in database...")
-            // Update all affected players in database
-            val allPlayers = listOf(
-                match.team1Player1,
-                match.team1Player2,
-                match.team2Player1,
-                match.team2Player2
+            val updatedPlayers = applyPlayerStatistics(
+                listOf(player1Team1, player1Team2),
+                listOf(player2Team1, player2Team2),
+                newResult
             )
 
-            allPlayers.forEach { player ->
+            // Create updated match with new scores and updated player references
+            val updatedMatch = match.copy(
+                scoreTeam1 = newResult.scoreTeam1,
+                scoreTeam2 = newResult.scoreTeam2,
+                isPlayed = true,
+                team1Player1 = updatedPlayers[0],
+                team1Player2 = updatedPlayers[1],
+                team2Player1 = updatedPlayers[2],
+                team2Player2 = updatedPlayers[3]
+            )
+
+            println("MatchResultService: Updating match in database...")
+            repository.updateMatch(updatedMatch, tournamentId)
+
+            println("MatchResultService: Updating players in database...")
+            updatedPlayers.forEach { player ->
                 repository.updatePlayer(player, tournamentId)
             }
 
@@ -65,55 +80,50 @@ class MatchResultService(
         } catch (e: Exception) {
             println("MatchResultService ERROR: ${e.message}")
             e.printStackTrace()
-            throw e // Re-throw så ViewModel kan håndtere det
+            throw e
         }
     }
 
     /**
      * Applies player statistics based on the match result.
-     * Updates points, wins, losses, draws, and games played for all players.
-     *
-     * @param match The match containing the players
-     * @param result The result to apply
+     * Returns new Player instances with updated statistics.
      */
-    private fun applyPlayerStatistics(match: Match, result: MatchResult) {
-        val team1Players = listOf(match.team1Player1, match.team1Player2)
-        val team2Players = listOf(match.team2Player1, match.team2Player2)
-
+    private fun applyPlayerStatistics(
+        team1Players: List<Player>,
+        team2Players: List<Player>,
+        result: MatchResult
+    ): List<Player> {
         // Update points scored
-        team1Players.forEach { player ->
-            player.totalPoints += result.scoreTeam1
+        val team1WithPoints = team1Players.map { player ->
+            player.copy(totalPoints = player.totalPoints + result.scoreTeam1)
         }
-        team2Players.forEach { player ->
-            player.totalPoints += result.scoreTeam2
+        val team2WithPoints = team2Players.map { player ->
+            player.copy(totalPoints = player.totalPoints + result.scoreTeam2)
         }
 
         // Update wins, losses, draws, and games played based on outcome
-        when (result.getOutcome()) {
+        return when (result.getOutcome()) {
             MatchOutcome.TEAM1_WIN -> {
-                team1Players.forEach { player ->
-                    player.wins++
-                    player.gamesPlayed++
+                val team1Updated = team1WithPoints.map { player ->
+                    player.copy(wins = player.wins + 1, gamesPlayed = player.gamesPlayed + 1)
                 }
-                team2Players.forEach { player ->
-                    player.losses++
-                    player.gamesPlayed++
+                val team2Updated = team2WithPoints.map { player ->
+                    player.copy(losses = player.losses + 1, gamesPlayed = player.gamesPlayed + 1)
                 }
+                team1Updated + team2Updated
             }
             MatchOutcome.TEAM2_WIN -> {
-                team2Players.forEach { player ->
-                    player.wins++
-                    player.gamesPlayed++
+                val team1Updated = team1WithPoints.map { player ->
+                    player.copy(losses = player.losses + 1, gamesPlayed = player.gamesPlayed + 1)
                 }
-                team1Players.forEach { player ->
-                    player.losses++
-                    player.gamesPlayed++
+                val team2Updated = team2WithPoints.map { player ->
+                    player.copy(wins = player.wins + 1, gamesPlayed = player.gamesPlayed + 1)
                 }
+                team1Updated + team2Updated
             }
             MatchOutcome.DRAW -> {
-                (team1Players + team2Players).forEach { player ->
-                    player.draws++
-                    player.gamesPlayed++
+                (team1WithPoints + team2WithPoints).map { player ->
+                    player.copy(draws = player.draws + 1, gamesPlayed = player.gamesPlayed + 1)
                 }
             }
         }
@@ -121,49 +131,44 @@ class MatchResultService(
 
     /**
      * Reverts player statistics that were previously applied from a match result.
-     * Used when editing a match that has already been played.
-     *
-     * @param match The match containing the players
-     * @param result The result to revert
+     * Returns new Player instances with reverted statistics.
      */
-    private fun revertPlayerStatistics(match: Match, result: MatchResult) {
-        val team1Players = listOf(match.team1Player1, match.team1Player2)
-        val team2Players = listOf(match.team2Player1, match.team2Player2)
-
+    private fun revertPlayerStatistics(
+        team1Players: List<Player>,
+        team2Players: List<Player>,
+        result: MatchResult
+    ): List<Player> {
         // Revert points
-        team1Players.forEach { player ->
-            player.totalPoints -= result.scoreTeam1
+        val team1WithPoints = team1Players.map { player ->
+            player.copy(totalPoints = player.totalPoints - result.scoreTeam1)
         }
-        team2Players.forEach { player ->
-            player.totalPoints -= result.scoreTeam2
+        val team2WithPoints = team2Players.map { player ->
+            player.copy(totalPoints = player.totalPoints - result.scoreTeam2)
         }
 
         // Revert wins, losses, draws, and games played based on outcome
-        when (result.getOutcome()) {
+        return when (result.getOutcome()) {
             MatchOutcome.TEAM1_WIN -> {
-                team1Players.forEach { player ->
-                    player.wins--
-                    player.gamesPlayed--
+                val team1Updated = team1WithPoints.map { player ->
+                    player.copy(wins = player.wins - 1, gamesPlayed = player.gamesPlayed - 1)
                 }
-                team2Players.forEach { player ->
-                    player.losses--
-                    player.gamesPlayed--
+                val team2Updated = team2WithPoints.map { player ->
+                    player.copy(losses = player.losses - 1, gamesPlayed = player.gamesPlayed - 1)
                 }
+                team1Updated + team2Updated
             }
             MatchOutcome.TEAM2_WIN -> {
-                team2Players.forEach { player ->
-                    player.wins--
-                    player.gamesPlayed--
+                val team1Updated = team1WithPoints.map { player ->
+                    player.copy(losses = player.losses - 1, gamesPlayed = player.gamesPlayed - 1)
                 }
-                team1Players.forEach { player ->
-                    player.losses--
-                    player.gamesPlayed--
+                val team2Updated = team2WithPoints.map { player ->
+                    player.copy(wins = player.wins - 1, gamesPlayed = player.gamesPlayed - 1)
                 }
+                team1Updated + team2Updated
             }
             MatchOutcome.DRAW -> {
-                (team1Players + team2Players).forEach { player ->
-                    player.draws--
-                    player.gamesPlayed--
+                (team1WithPoints + team2WithPoints).map { player ->
+                    player.copy(draws = player.draws - 1, gamesPlayed = player.gamesPlayed - 1)
                 }
             }
         }

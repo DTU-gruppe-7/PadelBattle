@@ -105,22 +105,35 @@ class TournamentViewModel(
 
         viewModelScope.launch {
             try {
-                // 1. Opdater spilleren i players listen
-                val playerInList = currentTournament.players.find { it.id == player.id }
-                playerInList?.name = newName
+                // 1. Find og erstat spilleren i players listen med ny kopi
+                val playerIndex = currentTournament.players.indexOfFirst { it.id == player.id }
+                if (playerIndex == -1) return@launch
+                
+                val updatedPlayer = currentTournament.players[playerIndex].copy(name = newName)
+                currentTournament.players[playerIndex] = updatedPlayer
 
-                // 2. Opdater spilleren i alle matches
-                currentTournament.matches.forEach { match ->
-                    if (match.team1Player1.id == player.id) match.team1Player1.name = newName
-                    if (match.team1Player2.id == player.id) match.team1Player2.name = newName
-                    if (match.team2Player1.id == player.id) match.team2Player1.name = newName
-                    if (match.team2Player2.id == player.id) match.team2Player2.name = newName
+                // 2. Opdater alle matches der refererer til denne spiller
+                currentTournament.matches.forEachIndexed { index, match ->
+                    var updatedMatch = match
+                    if (match.team1Player1.id == player.id) {
+                        updatedMatch = updatedMatch.copy(team1Player1 = updatedPlayer)
+                    }
+                    if (match.team1Player2.id == player.id) {
+                        updatedMatch = updatedMatch.copy(team1Player2 = updatedPlayer)
+                    }
+                    if (match.team2Player1.id == player.id) {
+                        updatedMatch = updatedMatch.copy(team2Player1 = updatedPlayer)
+                    }
+                    if (match.team2Player2.id == player.id) {
+                        updatedMatch = updatedMatch.copy(team2Player2 = updatedPlayer)
+                    }
+                    if (updatedMatch !== match) {
+                        currentTournament.matches[index] = updatedMatch
+                    }
                 }
 
                 // 3. Gem til database
-                playerInList?.let { p ->
-                    repository.updatePlayer(p, currentTournament.id)
-                }
+                repository.updatePlayer(updatedPlayer, currentTournament.id)
 
                 // 4. Trigger UI opdatering
                 notifyTournamentUpdated()

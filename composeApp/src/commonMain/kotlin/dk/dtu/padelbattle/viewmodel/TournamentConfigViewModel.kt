@@ -2,27 +2,22 @@ package dk.dtu.padelbattle.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dk.dtu.padelbattle.data.dao.MatchDao
-import dk.dtu.padelbattle.data.dao.PlayerDao
-import dk.dtu.padelbattle.data.dao.TournamentDao
-import dk.dtu.padelbattle.data.mapper.toEntitiesWithRelations
+import dk.dtu.padelbattle.data.repository.TournamentRepository
 import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
 class TournamentConfigViewModel(
-    private val tournamentDao: TournamentDao,
-    private val playerDao: PlayerDao,
-    private val matchDao: MatchDao
+    private val repository: TournamentRepository
 ) : ViewModel() {
 
     private val _tournamentName = MutableStateFlow("")
@@ -45,7 +40,6 @@ class TournamentConfigViewModel(
 
     /**
      * Minimum antal spillere baseret på antal baner (4 spillere per bane).
-     * Eksponeret som StateFlow for reaktiv UI opdatering.
      */
     val minimumPlayers: StateFlow<Int> = _numberOfCourts
         .map { courts -> courts * 4 }
@@ -53,7 +47,6 @@ class TournamentConfigViewModel(
 
     /**
      * Om turneringen kan startes (har navn og nok spillere).
-     * Eksponeret som StateFlow for reaktiv UI opdatering.
      */
     val canStartTournament: StateFlow<Boolean> = combine(
         _tournamentName,
@@ -70,7 +63,7 @@ class TournamentConfigViewModel(
     fun updateCurrentPlayerName(name: String) {
         _currentPlayerName.value = name
     }
-    
+
     fun updateNumberOfCourts(courts: Int) {
         _numberOfCourts.value = courts.coerceIn(1, Tournament.MAX_COURTS)
     }
@@ -93,16 +86,11 @@ class TournamentConfigViewModel(
         if (index in currentList.indices) {
             currentList.removeAt(index)
             _playerNames.value = currentList
-            // Antal baner ændres IKKE automatisk - brugeren skal selv tilføje flere spillere
-            // for at opfylde minimum (numberOfCourts * 4 spillere)
         }
     }
 
-
     /**
-     * Opretter en turnering baseret på den valgte type og indtastede spillere.
-     * Genererer automatisk kampe ved hjælp af turneringens startTournament() metode.
-     * Gemmer turneringen til databasen.
+     * Opretter en turnering og gemmer til databasen.
      */
     fun createTournament(tournamentType: TournamentType, onSuccess: (Tournament) -> Unit) {
         if (!canStartTournament.value) {
@@ -129,15 +117,10 @@ class TournamentConfigViewModel(
                 // Generer kampe
                 tournament.startTournament()
 
-                // Konverter til database entities
-                val entities = tournament.toEntitiesWithRelations()
+                // Gem til database via repository
+                repository.saveTournament(tournament)
 
-                // Gem til database
-                tournamentDao.insertTournament(entities.tournament)
-                playerDao.insertPlayers(entities.players)
-                matchDao.insertMatches(entities.matches)
-
-                // Kald success callback med den oprettede turnering
+                // Kald success callback
                 onSuccess(tournament)
             } catch (e: Exception) {
                 _error.value = e.message
@@ -161,23 +144,21 @@ class TournamentConfigViewModel(
     /**
      * Populerer konfigurationsfelterne med data fra en eksisterende turnering.
      * Bruges til at duplikere en turnering.
-     *
-     * @param tournamentId ID'et på turneringen der skal duplikeres
      */
     fun loadTournamentForDuplication(tournamentId: String) {
         viewModelScope.launch {
             try {
                 // Hent turneringen fra databasen
-                val tournamentEntity = tournamentDao.getTournamentById(tournamentId)
-                if (tournamentEntity != null) {
+                val tournament = repository.getTournamentById(tournamentId)
+                if (tournament != null) {
                     // Hent spillere for turneringen
-                    val playersInTournament = playerDao.getPlayersForTournament(tournamentId)
+                    val playersInTournament = repository.getPlayersForTournament(tournamentId)
 
                     // Populer felterne med turneringens data
-                    _tournamentName.value = "${tournamentEntity.name} (Kopi)"
+                    _tournamentName.value = "${tournament.name} (Kopi)"
                     _playerNames.value = playersInTournament.map { it.name }
-                    _numberOfCourts.value = tournamentEntity.numberOfCourts
-                    _pointsPerMatch.value = tournamentEntity.pointsPerMatch
+                    _numberOfCourts.value = tournament.numberOfCourts
+                    _pointsPerMatch.value = tournament.pointsPerMatch
                     _currentPlayerName.value = ""
                     _error.value = null
                 }

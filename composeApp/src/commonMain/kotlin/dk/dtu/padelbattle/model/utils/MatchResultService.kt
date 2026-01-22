@@ -1,8 +1,6 @@
 package dk.dtu.padelbattle.model.utils
 
-import dk.dtu.padelbattle.data.dao.MatchDao
-import dk.dtu.padelbattle.data.dao.PlayerDao
-import dk.dtu.padelbattle.data.mapper.toEntity
+import dk.dtu.padelbattle.data.repository.TournamentRepository
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchOutcome
 import dk.dtu.padelbattle.model.MatchResult
@@ -13,8 +11,7 @@ import dk.dtu.padelbattle.model.MatchResult
  * from the ViewModel and domain models.
  */
 class MatchResultService(
-    private val matchDao: MatchDao,
-    private val playerDao: PlayerDao
+    private val repository: TournamentRepository
 ) {
 
     /**
@@ -49,7 +46,7 @@ class MatchResultService(
 
             println("MatchResultService: Updating match in database...")
             // Update match in database
-            matchDao.updateMatch(match.toEntity(tournamentId))
+            repository.updateMatch(match, tournamentId)
 
             println("MatchResultService: Updating players in database...")
             // Update all affected players in database
@@ -61,7 +58,7 @@ class MatchResultService(
             )
 
             allPlayers.forEach { player ->
-                playerDao.updatePlayer(player.toEntity(tournamentId))
+                repository.updatePlayer(player, tournamentId)
             }
 
             println("MatchResultService: Successfully saved match result")

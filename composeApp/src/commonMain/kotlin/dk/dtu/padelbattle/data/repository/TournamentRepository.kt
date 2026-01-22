@@ -70,6 +70,31 @@ interface TournamentRepository {
     suspend fun deleteTournament(tournamentId: String)
 
     // =====================================================
+    // MEXICANO EXTENSION TRACKING
+    // =====================================================
+
+    /**
+     * Registrerer at en Mexicano-turnering er blevet udvidet.
+     * Sætter at der skal spilles mindst 2 runder mere før afslutning.
+     * @param tournamentId ID på turneringen
+     */
+    suspend fun registerExtension(tournamentId: String)
+
+    /**
+     * Kaldes når en runde er færdigspillet i en Mexicano-turnering.
+     * Reducerer tælleren med 1.
+     * @param tournamentId ID på turneringen
+     * @return true hvis turneringen nu kan afsluttes (0 runder tilbage)
+     */
+    suspend fun decrementExtensionRounds(tournamentId: String): Boolean
+
+    /**
+     * Rydder extension tracking for en turnering.
+     * @param tournamentId ID på turneringen
+     */
+    suspend fun clearExtensionTracking(tournamentId: String)
+
+    // =====================================================
     // MATCH OPERATIONS
     // =====================================================
 

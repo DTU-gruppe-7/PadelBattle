@@ -3,7 +3,6 @@ package dk.dtu.padelbattle.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.repository.TournamentRepository
-import dk.dtu.padelbattle.model.MexicanoExtensionTracker
 import dk.dtu.padelbattle.model.Player
 import dk.dtu.padelbattle.model.Tournament
 import dk.dtu.padelbattle.model.TournamentType
@@ -159,9 +158,9 @@ class TournamentViewModel(
                 // 3. Gem de nye kampe til databasen
                 repository.insertMatches(newMatches, currentTournament.id)
 
-                // 4. For Mexicano: Registrer at turneringen er udvidet
+                // 4. For Mexicano: Registrer at turneringen er udvidet (i databasen)
                 if (currentTournament.type == TournamentType.MEXICANO) {
-                    MexicanoExtensionTracker.registerExtension(currentTournament.id)
+                    repository.registerExtension(currentTournament.id)
                 }
 
                 // 5. Marker turneringen som ikke-afsluttet

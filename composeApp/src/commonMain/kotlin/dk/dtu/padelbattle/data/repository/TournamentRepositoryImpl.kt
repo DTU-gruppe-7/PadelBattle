@@ -74,6 +74,28 @@ class TournamentRepositoryImpl(
     }
 
     // =====================================================
+    // MEXICANO EXTENSION TRACKING
+    // =====================================================
+
+    override suspend fun registerExtension(tournamentId: String) {
+        tournamentDao.updateExtensionRoundsRemaining(tournamentId, 2)
+    }
+
+    override suspend fun decrementExtensionRounds(tournamentId: String): Boolean {
+        val current = tournamentDao.getExtensionRoundsRemaining(tournamentId) ?: 0
+        if (current > 0) {
+            val newValue = current - 1
+            tournamentDao.updateExtensionRoundsRemaining(tournamentId, newValue)
+            return newValue <= 0
+        }
+        return true // Ingen udvidelse registreret, kan afsluttes
+    }
+
+    override suspend fun clearExtensionTracking(tournamentId: String) {
+        tournamentDao.updateExtensionRoundsRemaining(tournamentId, 0)
+    }
+
+    // =====================================================
     // MATCH OPERATIONS
     // =====================================================
 

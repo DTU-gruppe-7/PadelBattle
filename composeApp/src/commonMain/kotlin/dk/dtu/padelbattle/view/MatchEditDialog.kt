@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,14 +49,43 @@ fun MatchEditDialog(
     onDismiss: () -> Unit,
     onTournamentCompleted: () -> Unit = {}
 ) {
-    val scoreTeam1 by viewModel.scoreTeam1.collectAsState()
-    val scoreTeam2 by viewModel.scoreTeam2.collectAsState()
-    var isSaving by remember { mutableStateOf(false) }
-    val pointsPerMatch = currentTournament.pointsPerMatch
+    // key() tvinger komplet genskabelse af alt indhold når match/turnering ændres
+    // Dette sikrer at alle remembered states og wheel pickers starter med korrekte værdier
+    key(match.id, currentTournament.id) {
+        MatchEditDialogContent(
+            match = match,
+            currentTournament = currentTournament,
+            viewModel = viewModel,
+            onSave = onSave,
+            onDismiss = onDismiss,
+            onTournamentCompleted = onTournamentCompleted
+        )
+    }
+}
 
-    // Initialiser viewModel med kampen
-    LaunchedEffect(match) {
-        viewModel.setMatch(match, currentTournament.pointsPerMatch)
+@Composable
+private fun MatchEditDialogContent(
+    match: Match,
+    currentTournament: Tournament,
+    viewModel: MatchEditViewModel,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+    onTournamentCompleted: () -> Unit
+) {
+    val pointsPerMatch = currentTournament.pointsPerMatch
+    
+    // Beregn korrekte initial scores DIREKTE fra match (synkront)
+    val initialScore1 = if (match.isPlayed) match.scoreTeam1 else pointsPerMatch / 2
+    val initialScore2 = if (match.isPlayed) match.scoreTeam2 else pointsPerMatch - initialScore1
+    
+    // Lokal state der starter med korrekte værdier
+    var scoreTeam1 by remember { mutableStateOf(initialScore1) }
+    var scoreTeam2 by remember { mutableStateOf(initialScore2) }
+    var isSaving by remember { mutableStateOf(false) }
+    
+    // Synkroniser med ViewModel (for saveMatch)
+    LaunchedEffect(Unit) {
+        viewModel.setMatch(match, pointsPerMatch)
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -99,7 +129,11 @@ fun MatchEditDialog(
                     ) {
                         ScoreWheelPicker(
                             score = scoreTeam1,
-                            onScoreChange = { viewModel.updateScoreTeam1(it) },
+                            onScoreChange = { newScore ->
+                                scoreTeam1 = newScore
+                                scoreTeam2 = pointsPerMatch - newScore
+                                viewModel.updateScoreTeam1(newScore)
+                            },
                             maxScore = pointsPerMatch
                         )
 
@@ -116,7 +150,11 @@ fun MatchEditDialog(
 
                         ScoreWheelPicker(
                             score = scoreTeam2,
-                            onScoreChange = { viewModel.updateScoreTeam2(it) },
+                            onScoreChange = { newScore ->
+                                scoreTeam2 = newScore
+                                scoreTeam1 = pointsPerMatch - newScore
+                                viewModel.updateScoreTeam2(newScore)
+                            },
                             maxScore = pointsPerMatch
                         )
                     }

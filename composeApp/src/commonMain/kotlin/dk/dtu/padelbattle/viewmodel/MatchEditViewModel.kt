@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dk.dtu.padelbattle.data.repository.TournamentRepository
 import dk.dtu.padelbattle.model.Match
 import dk.dtu.padelbattle.model.MatchResult
-import dk.dtu.padelbattle.model.MexicanoExtensionTracker
 import dk.dtu.padelbattle.model.TournamentType
 import dk.dtu.padelbattle.model.utils.MatchResultService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,18 +35,23 @@ class MatchEditViewModel(
     val currentMatch: StateFlow<Match?> = _currentMatch.asStateFlow()
 
     /**
-     * Initialiserer viewModel med en kamp
+     * Initialiserer viewModel med en kamp.
+     * For uafspillede kampe sættes scores til halvdelen af pointsPerMatch.
+     * For allerede spillede kampe vises de gemte scores.
      */
     fun setMatch(match: Match, pointsPerMatch: Int) {
         _pointsPerMatch.value = pointsPerMatch
         _currentMatch.value = match
+        
+        // Altid start med standard scores (halvdelen af pointsPerMatch)
+        val defaultScore = pointsPerMatch / 2
+        _scoreTeam1.value = defaultScore
+        _scoreTeam2.value = pointsPerMatch - defaultScore  // Håndterer ulige pointsPerMatch
+        
+        // Kun overskriv med gemte scores hvis kampen faktisk er spillet
         if (match.isPlayed) {
             _scoreTeam1.value = match.scoreTeam1
             _scoreTeam2.value = match.scoreTeam2
-        } else {
-            // Standardværdier for nye kampe
-            _scoreTeam1.value = (pointsPerMatch / 2)
-            _scoreTeam2.value = (pointsPerMatch / 2)
         }
     }
 
@@ -150,13 +154,13 @@ class MatchEditViewModel(
                     println("Minimum kampe spillet: $minMatchesPlayed, Maximum: $maxMatchesPlayed")
                     println("Alle har lige mange kampe: $allHaveEqualMatches")
 
-                    val canCompleteFromTracker = MexicanoExtensionTracker.roundCompleted(tournamentId)
+                    val canCompleteFromTracker = repository.decrementExtensionRounds(tournamentId)
                     println("Extension tracker: canComplete = $canCompleteFromTracker")
 
                     if (minMatchesPlayed >= 3 && allHaveEqualMatches && canCompleteFromTracker) {
                         println("Alle spillere har spillet mindst 3 kampe og alle har lige mange - turneringen er færdig!")
                         isCompleted = true
-                        MexicanoExtensionTracker.clear(tournamentId)
+                        repository.clearExtensionTracking(tournamentId)
                     } else {
                         println("Turneringen fortsætter - genererer ny runde...")
                         val addedNewRound = tournament.extendTournament()
@@ -196,8 +200,9 @@ class MatchEditViewModel(
     }
 
     fun reset() {
-        _scoreTeam1.value = 0
-        _scoreTeam2.value = 0
+        val defaultScore = _pointsPerMatch.value / 2
+        _scoreTeam1.value = defaultScore
+        _scoreTeam2.value = _pointsPerMatch.value - defaultScore
         _currentMatch.value = null
     }
 }

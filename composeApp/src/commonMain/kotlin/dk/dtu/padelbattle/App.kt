@@ -60,8 +60,12 @@ fun App() {
 
         val selectedTab by navigationManager.selectedTab.collectAsState()
         val settingsMenuItems by settingsViewModel.menuItems.collectAsState()
+        val currentTournament by tournamentViewModel.tournament.collectAsState()
 
         SettingsDialogs(settingsViewModel)
+
+        // Brug turneringens navn direkte som titel når vi er på TournamentView
+        val titleOverride = if (currentScreen is TournamentView) currentTournament?.name else null
 
         Scaffold(
             topBar = {
@@ -70,7 +74,8 @@ fun App() {
                     canNavigateBack = navigationManager.canNavigateBack(),
                     navigateUp = { navigationManager.navigateBack() },
                     settingsMenuItems = settingsMenuItems,
-                    settingsViewModel = settingsViewModel
+                    settingsViewModel = settingsViewModel,
+                    titleOverride = titleOverride
                 )
             },
             containerColor = MaterialTheme.colorScheme.background,

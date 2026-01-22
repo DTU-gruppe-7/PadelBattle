@@ -125,17 +125,6 @@ class NavigationManager(
     }
 
     /**
-     * Opdaterer navigation når turneringens navn ændres.
-     */
-    fun updateTournamentViewRoute(currentScreen: Screen, tournament: Tournament) {
-        if (currentScreen is TournamentView && currentScreen.tournamentName != tournament.name) {
-            navController.navigate(TournamentView(tournamentName = tournament.name)) {
-                popUpTo(TournamentView::class) { inclusive = true }
-            }
-        }
-    }
-
-    /**
      * Håndterer genindlæsning fra database efter ændringer.
      */
     fun reloadTournamentAndUpdateMatches() {
@@ -184,7 +173,13 @@ class NavigationManager(
         settingsViewModel.updateScreen(
             screen = currentScreen,
             tournament = currentTournament,
-            onUpdate = { tournamentViewModel.notifyTournamentUpdated() },
+            onUpdate = { updatedTournament ->
+                if (updatedTournament != null) {
+                    // Opdater turneringen direkte i TournamentViewModel
+                    tournamentViewModel.updateTournament(updatedTournament)
+                }
+                tournamentViewModel.notifyTournamentUpdated()
+            },
             onCourtsUpdated = { reloadTournamentAndUpdateMatches() }
         )
     }
@@ -226,7 +221,6 @@ class NavigationManager(
 fun NavigationManagerEffects(navigationManager: NavigationManager, currentScreen: Screen) {
     val tournamentViewModel: TournamentViewModel = org.koin.compose.koinInject()
     val currentTournament by tournamentViewModel.tournament.collectAsState()
-    val revision by tournamentViewModel.revision.collectAsState()
     
     // Track previous screen for proper cleanup
     var previousScreen by remember { mutableStateOf<Screen?>(null) }
@@ -248,12 +242,5 @@ fun NavigationManagerEffects(navigationManager: NavigationManager, currentScreen
     // Sync settings med skærm
     LaunchedEffect(currentScreen, currentTournament) {
         navigationManager.syncSettingsWithScreen(currentScreen, currentTournament)
-    }
-
-    // Håndter navigation når turneringens navn ændres
-    LaunchedEffect(currentTournament?.name, revision) {
-        currentTournament?.let { tournament ->
-            navigationManager.updateTournamentViewRoute(currentScreen, tournament)
-        }
     }
 }

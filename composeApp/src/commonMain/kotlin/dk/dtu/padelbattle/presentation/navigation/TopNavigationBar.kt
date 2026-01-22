@@ -20,12 +20,13 @@ fun TopBar(
     navigateUp: () -> Unit,
     modifier: Modifier = Modifier,
     settingsMenuItems: List<SettingsMenuItem>? = null,
-    settingsViewModel: SettingsViewModel? = null
+    settingsViewModel: SettingsViewModel? = null,
+    titleOverride: String? = null
 ) {
     TopAppBar(
         title = { 
             Text(
-                text = currentScreen.title,
+                text = titleOverride ?: currentScreen.title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = PadelOrange

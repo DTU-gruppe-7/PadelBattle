@@ -107,7 +107,10 @@ fun TournamentViewScreen(
     if (showPointsDialog) {
         PremiumPointsPickerDialog(
             currentValue = tournament?.pointsPerMatch ?: 16,
-            onValueChange = { settingsViewModel.onPointsSelected(it) },
+            onValueChange = { newPoints ->
+                // Send turneringen direkte for at undgå synkroniseringsproblemer
+                settingsViewModel.onPointsSelected(newPoints, tournament)
+            },
             onDismiss = { settingsViewModel.dismissPointsDialog() }
         )
     }

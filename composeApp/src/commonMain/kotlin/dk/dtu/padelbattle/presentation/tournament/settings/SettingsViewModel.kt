@@ -51,7 +51,7 @@ class SettingsViewModel(
 
     // Reference til den aktuelle turnering (sættes fra updateScreen)
     private var currentTournament: Tournament? = null
-    private var onTournamentUpdated: (() -> Unit)? = null
+    private var onTournamentUpdated: ((Tournament?) -> Unit)? = null
     private var onCourtsChanged: (() -> Unit)? = null
 
     private val _showPointsDialog = MutableStateFlow(false)
@@ -97,7 +97,7 @@ class SettingsViewModel(
     fun updateScreen(
         screen: Screen,
         tournament: Tournament? = null,
-        onUpdate: (() -> Unit)? = null,
+        onUpdate: ((Tournament?) -> Unit)? = null,
         onCourtsUpdated: (() -> Unit)? = null
     ) {
         currentTournament = tournament
@@ -144,7 +144,7 @@ class SettingsViewModel(
             try {
                 repository.updateTournamentName(tournamentId, newName)
                 currentTournament = currentTournament?.copy(name = newName)
-                onTournamentUpdated?.invoke()
+                onTournamentUpdated?.invoke(currentTournament)
                 dismissDialog()
             } catch (e: Exception) {
                 _error.value = "Kunne ikke opdatere navn: ${e.message}"
@@ -167,10 +167,21 @@ class SettingsViewModel(
         _showPointsDialog.value = true
     }
 
-    fun onPointsSelected(newPoints: Int) {
-        val tournament = currentTournament ?: return
+    fun onPointsSelected(newPoints: Int, tournament: Tournament? = null) {
+        // Brug det angivne tournament, ellers fald tilbage til currentTournament
+        val effectiveTournament = tournament ?: currentTournament
+        if (effectiveTournament == null) {
+            _error.value = "Kunne ikke ændre points: Ingen turnering valgt"
+            _showPointsDialog.value = false
+            return
+        }
 
-        if (tournament.hasPlayedMatches()) {
+        // Opdater currentTournament hvis det blev angivet udefra
+        if (tournament != null) {
+            currentTournament = tournament
+        }
+
+        if (effectiveTournament.hasPlayedMatches()) {
             _pendingPointsChange.value = newPoints
             _showWarningDialog.value = true
         } else {
@@ -199,7 +210,7 @@ class SettingsViewModel(
             try {
                 repository.updatePointsPerMatch(tournament.id, newPoints)
                 currentTournament = tournament.copy(pointsPerMatch = newPoints)
-                onTournamentUpdated?.invoke()
+                onTournamentUpdated?.invoke(currentTournament)
             } catch (e: Exception) {
                 _error.value = "Kunne ikke gemme ændring: ${e.message}"
             }
@@ -260,7 +271,7 @@ class SettingsViewModel(
                 // Opdater lokal reference
                 currentTournament = updatedTournament
 
-                onTournamentUpdated?.invoke()
+                onTournamentUpdated?.invoke(currentTournament)
                 onCourtsChanged?.invoke()
 
                 _isUpdatingCourts.value = false

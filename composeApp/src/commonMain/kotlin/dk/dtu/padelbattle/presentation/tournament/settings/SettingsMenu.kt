@@ -102,7 +102,7 @@ fun SettingsMenu(
         when (val dialogType = currentDialogType) {
             is SettingsDialogType.EditTournamentName -> {
                 TextInputDialog(
-                    title = "Ændr turneringsnavn",
+                    title = "Ændre Turneringsnavn",
                     label = "Turneringsnavn",
                     currentValue = dialogType.currentName,
                     onConfirm = { newName ->

@@ -83,7 +83,7 @@ private fun EditTournamentNameDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Ændr turneringsnavn",
+                text = "Ændre Turneringsnavn",
                 style = MaterialTheme.typography.headlineSmall
             )
         },

@@ -112,7 +112,7 @@ class SettingsViewModel(
 
     private fun getTournamentViewMenuItems(): List<SettingsMenuItem> {
         return listOf(
-            SettingsMenuItem("Ændr turneringsnavn") {
+            SettingsMenuItem("Ændre Turneringsnavn") {
                 currentTournament?.let { tournament ->
                     _currentDialogType.value = SettingsDialogType.EditTournamentName(
                         currentName = tournament.name,
